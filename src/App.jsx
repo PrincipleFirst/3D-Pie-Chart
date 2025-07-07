@@ -11,6 +11,22 @@ function App() {
   const orbitControlsRef = React.useRef()
   const [controlValues, set] = useInputControls()
   const data = pieDataFromControls(controlValues)
+  // 测试：为前3个扇区添加自定义 label 和 labelLine 样式
+  if (data[0]) {
+    data[0].customLabel = ['自定义A', '测试123', '红色线3px']
+    data[0].labelLineColor = '#ff0000'
+    data[0].labelLineWidth = 1
+  }
+  if (data[1]) {
+    data[1].customLabel = ['自定义B', '蓝色线1px']
+    data[1].labelLineColor = '#0000ff'
+    data[1].labelLineWidth = 1
+  }
+  if (data[2]) {
+    data[2].customLabel = ['自定义C', '绿色线5px']
+    data[2].labelLineColor = '#00ff00'
+    data[2].labelLineWidth = 1
+  }
   const {
     innerRadius,
     outerRadius,
