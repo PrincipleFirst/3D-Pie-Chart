@@ -151,8 +151,29 @@ const PieSlice = ({
   const start = [Math.cos(theta) * r, 0, Math.sin(theta) * r]
   const mid = [Math.cos(theta) * (r + offset1), 0, Math.sin(theta) * (r + offset1)]
   const isLeft = theta > Math.PI / 2 || theta < -Math.PI / 2
-  const endX = isLeft ? mid[0] - offset2 : mid[0] + offset2
+  
+  // 先按原始逻辑计算endX
+  let endX = isLeft ? mid[0] - offset2 : mid[0] + offset2
+  
+  // 计算第一段线方向（从start到mid）
+  const firstLineDirection = [mid[0] - start[0], mid[2] - start[2]]
+  
+  // 计算第二段线方向（从mid到end）
+  const secondLineDirection = [endX - mid[0], mid[2] - mid[2]] // mid[2] - mid[2] = 0，所以是水平线
+  
+  // 计算点积（简化版，只考虑XZ平面）
+  const dotProduct = firstLineDirection[0] * secondLineDirection[0] + firstLineDirection[1] * secondLineDirection[1]
+  
+  // 如果点积为负，说明夹角大于90度，需要调整方向
+  if (dotProduct < 0) {
+    endX = isLeft ? mid[0] + offset2 : mid[0] - offset2
+  }
+  
   const end = [endX, 0, mid[2]]
+  
+  // 重新计算isLeft，因为endX可能已经改变方向
+  const finalIsLeft = endX < mid[0]
+  
   // 标签位置将根据摄像机动态调整，这里先设置一个初始位置
   const labelPos = [endX, 0, mid[2]]
 
@@ -204,7 +225,7 @@ const PieSlice = ({
         color={part.style.color || labelColor}
         fontFamily={part.style.fontFamily || labelFontFamily}
         fontSize={part.style.fontSize || labelFontSize || 0.12}
-        anchorX={isLeft ? 'right' : 'left'}
+        anchorX={finalIsLeft ? 'right' : 'left'}
         anchorY="middle"
         outlineWidth={part.style.outlineWidth || '2.5%'}
         outlineColor={part.style.outlineColor || '#000'}
@@ -272,7 +293,7 @@ const PieSlice = ({
         originalEnd={end}
         labelLines={labelLines}
         renderRichLine={renderRichLine}
-        isLeft={isLeft}
+        isLeft={finalIsLeft}
         labelColor={labelColor}
         labelFontFamily={labelFontFamily}
         labelFontSize={labelFontSize}
