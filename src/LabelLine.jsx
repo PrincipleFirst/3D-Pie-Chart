@@ -35,19 +35,21 @@ const LabelLine = ({ points, color = '#fff', width = 2 }) => {
       horizontalDirection.set(1, 0, 0)
     }
     
-    // 确定水平线的方向（向左或向右）
-    const midPoint = new THREE.Vector3(mid[0], mid[1], mid[2])
-    const originalEndPoint = new THREE.Vector3(originalEnd[0], originalEnd[1], originalEnd[2])
-    const midToOriginalEnd = new THREE.Vector3().subVectors(originalEndPoint, midPoint)
+    // 计算从圆心到mid点的方向向量（指向圆心外）
+    const centerToMid = new THREE.Vector3(mid[0], 0, mid[2]) // 圆心在(0,0,0)
+    centerToMid.normalize()
     
-    // 使用摄像机右方向来判断原始方向是向左还是向右
-    const dotProduct = midToOriginalEnd.dot(cameraRight)
-    const isLeft = dotProduct < 0
+    // 计算水平方向与圆心外方向的点积
+    const horizontalDotCenter = horizontalDirection.dot(centerToMid)
     
-    // 根据原始方向确定水平线的方向
-    const horizontalOffset = isLeft ? -1 : 1
+    // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
+    // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
+    const shouldGoRight = horizontalDotCenter > 0
     
-    // 计算水平线的长度（保持与原始长度相似）
+    // 根据这个方向确定水平线的朝向
+    const horizontalOffset = shouldGoRight ? 1 : -1
+    
+    // 计算水平线的长度（使用3D空间中的实际距离）
     const originalLength = Math.abs(originalEnd[0] - mid[0])
     const horizontalLength = Math.max(originalLength, 0.3) // 最小长度
     

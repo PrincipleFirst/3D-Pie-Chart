@@ -33,11 +33,6 @@ const DynamicLabel = ({
     const cameraWorldPosition = new THREE.Vector3()
     camera.getWorldPosition(cameraWorldPosition)
     
-    // 先定义midPoint
-    const midPoint = new THREE.Vector3(mid[0], mid[1], mid[2])
-    const originalEndPoint = new THREE.Vector3(originalEnd[0], originalEnd[1], originalEnd[2])
-    const midToOriginalEnd = new THREE.Vector3().subVectors(originalEndPoint, midPoint)
-    
     // 获取摄像机的右方向向量（在摄像机坐标系中）
     const cameraRight = new THREE.Vector3()
     camera.getWorldDirection(cameraRight)
@@ -52,12 +47,19 @@ const DynamicLabel = ({
       horizontalDirection.set(1, 0, 0)
     }
     
-    // 使用摄像机右方向来判断原始方向是向左还是向右
-    const dotProduct = midToOriginalEnd.dot(cameraRight)
-    const isLeftDirection = dotProduct < 0
+    // 计算从圆心到mid点的方向向量（指向圆心外）
+    const centerToMid = new THREE.Vector3(mid[0], 0, mid[2]) // 圆心在(0,0,0)
+    centerToMid.normalize()
     
-    // 根据原始方向确定水平线的方向
-    const horizontalOffset = isLeftDirection ? -1 : 1
+    // 计算水平方向与圆心外方向的点积
+    const horizontalDotCenter = horizontalDirection.dot(centerToMid)
+    
+    // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
+    // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
+    const shouldGoRight = horizontalDotCenter > 0
+    
+    // 根据这个方向确定水平线的朝向
+    const horizontalOffset = shouldGoRight ? 1 : -1
     
     // 计算水平线的长度（保持与原始长度相似）
     const originalLength = Math.abs(originalEnd[0] - mid[0])
@@ -150,23 +152,39 @@ const PieSlice = ({
 
   const start = [Math.cos(theta) * r, 0, Math.sin(theta) * r]
   const mid = [Math.cos(theta) * (r + offset1), 0, Math.sin(theta) * (r + offset1)]
-  const isLeft = theta > Math.PI / 2 || theta < -Math.PI / 2
   
-  // 先按原始逻辑计算endX
-  let endX = isLeft ? mid[0] - offset2 : mid[0] + offset2
+  // 计算从圆心到mid点的方向向量（指向圆心外）
+  const centerToMid = [mid[0], 0, mid[2]] // 圆心在(0,0,0)
+  const centerToMidLength = Math.sqrt(centerToMid[0] * centerToMid[0] + centerToMid[2] * centerToMid[2])
+  const centerToMidNormalized = [centerToMid[0] / centerToMidLength, 0, centerToMid[2] / centerToMidLength]
   
-  // 计算第一段线方向（从start到mid）
-  const firstLineDirection = [mid[0] - start[0], mid[2] - start[2]]
+  // 计算第一段线的方向向量（从start到mid）
+  const firstLineDirection = [mid[0] - start[0], 0, mid[2] - start[2]]
+  const firstLineLength = Math.sqrt(firstLineDirection[0] * firstLineDirection[0] + firstLineDirection[2] * firstLineDirection[2])
+  const firstLineNormalized = [firstLineDirection[0] / firstLineLength, 0, firstLineDirection[2] / firstLineLength]
   
-  // 计算第二段线方向（从mid到end）
-  const secondLineDirection = [endX - mid[0], mid[2] - mid[2]] // mid[2] - mid[2] = 0，所以是水平线
+  // 计算水平方向的单位向量（向右）
+  const horizontalDirection = [1, 0, 0]
   
-  // 计算点积（简化版，只考虑XZ平面）
-  const dotProduct = firstLineDirection[0] * secondLineDirection[0] + firstLineDirection[1] * secondLineDirection[1]
+  // 计算水平方向与圆心外方向的点积
+  const horizontalDotCenter = horizontalDirection[0] * centerToMidNormalized[0] + horizontalDirection[2] * centerToMidNormalized[2]
+  
+  // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
+  // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
+  const shouldGoRight = horizontalDotCenter > 0
+  
+  // 先按这个方向计算endX
+  let endX = shouldGoRight ? mid[0] + offset2 : mid[0] - offset2
+  
+  // 计算第二段线的方向向量（从mid到end）
+  const secondLineDirection = [endX - mid[0], 0, 0] // 水平线
+  
+  // 计算第一段线和第二段线的点积
+  const dotProduct = firstLineNormalized[0] * secondLineDirection[0] + firstLineNormalized[2] * secondLineDirection[2]
   
   // 如果点积为负，说明夹角大于90度，需要调整方向
   if (dotProduct < 0) {
-    endX = isLeft ? mid[0] + offset2 : mid[0] - offset2
+    endX = shouldGoRight ? mid[0] - offset2 : mid[0] + offset2
   }
   
   const end = [endX, 0, mid[2]]
