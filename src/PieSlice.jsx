@@ -10,7 +10,8 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Billboard from './Billboard'
 import { palette } from './theme'
-import LabelLine from './LabelLine'
+
+import { Line } from '@react-three/drei'
 
 const springConfig = springConfigs.wobbly
 
@@ -20,68 +21,60 @@ const DynamicLabel = ({
   originalEnd, 
   labelLines, 
   renderRichLine, 
-  isLeft, 
-  labelColor, 
-  labelFontFamily, 
-  labelFontSize 
+  labelLineEndPosition  // 接收 labelLine 的端点位置
+}) => {
+  // 直接使用 labelLine 的端点位置，不再独立计算
+  const labelPosition = labelLineEndPosition || originalEnd
+  
+  return (
+    <group>
+      {labelLines.map((line, idx) => (
+        <React.Fragment key={idx}>
+          {/* 为每个 Text 组件单独应用 Billboard 效果 */}
+          {renderRichLine(line, idx, labelPosition).map((textComponent, textIdx) => (
+            <Billboard key={`${idx}_${textIdx}`}>
+              {textComponent}
+            </Billboard>
+          ))}
+        </React.Fragment>
+      ))}
+    </group>
+  )
+}
+
+// 动态标签线组件，位置与标签完全同步
+const DynamicLabelLine = ({ 
+  start, 
+  mid, 
+  end, 
+  color, 
+  width,
+  calculateAdjustedPosition,
+  onPositionChange  // 回调函数，通知位置变化
 }) => {
   const { camera } = useThree()
-  const [labelPosition, setLabelPosition] = React.useState([originalEnd[0], 0, originalEnd[2]])
+  const [adjustedPoints, setAdjustedPoints] = React.useState([start, mid, end])
   
   useFrame(() => {
-    // 获取摄像机在世界坐标系中的位置和方向
-    const cameraWorldPosition = new THREE.Vector3()
-    camera.getWorldPosition(cameraWorldPosition)
+    if (!start || !mid || !end || !calculateAdjustedPosition) return
     
-    // 获取摄像机的右方向向量（在摄像机坐标系中）
-    const cameraRight = new THREE.Vector3()
-    camera.getWorldDirection(cameraRight)
-    cameraRight.cross(camera.up).normalize()
+    // 使用共享的定位计算函数
+    const newEnd = calculateAdjustedPosition(camera)
+    setAdjustedPoints([start, mid, newEnd])
     
-    // 将摄像机右方向投影到XZ平面，确保水平方向
-    const horizontalDirection = new THREE.Vector3(cameraRight.x, 0, cameraRight.z)
-    if (horizontalDirection.length() > 0.001) {
-      horizontalDirection.normalize()
-    } else {
-      // 如果投影后长度太小，使用默认的右方向
-      horizontalDirection.set(1, 0, 0)
+    // 通知父组件位置变化
+    if (onPositionChange) {
+      onPositionChange(newEnd)
     }
-    
-    // 计算从圆心到mid点的方向向量（指向圆心外）
-    const centerToMid = new THREE.Vector3(mid[0], 0, mid[2]) // 圆心在(0,0,0)
-    centerToMid.normalize()
-    
-    // 计算水平方向与圆心外方向的点积
-    const horizontalDotCenter = horizontalDirection.dot(centerToMid)
-    
-    // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
-    // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
-    const shouldGoRight = horizontalDotCenter > 0
-    
-    // 根据这个方向确定水平线的朝向
-    const horizontalOffset = shouldGoRight ? 1 : -1
-    
-    // 计算水平线的长度（保持与原始长度相似）
-    const originalLength = Math.abs(originalEnd[0] - mid[0])
-    const horizontalLength = Math.max(originalLength, 0.3) // 最小长度
-    
-    // 计算新的标签位置
-    const newLabelX = mid[0] + horizontalDirection.x * horizontalLength * horizontalOffset
-    const newLabelZ = mid[2] + horizontalDirection.z * horizontalLength * horizontalOffset
-    
-    setLabelPosition([newLabelX, 0, newLabelZ])
   })
   
   return (
-    <Billboard>
-      <group>
-        {labelLines.map((line, idx) => (
-          <React.Fragment key={idx}>
-            {renderRichLine(line, idx, labelPosition)}
-          </React.Fragment>
-        ))}
-      </group>
-    </Billboard>
+    <Line
+      points={adjustedPoints}
+      color={color}
+      lineWidth={width}
+      dashed={false}
+    />
   )
 }
 
@@ -215,7 +208,51 @@ const PieSlice = ({
         (percent * 100).toFixed(2) + '%'
       ]
 
-  // 简单富文本解析：支持 {key|内容}，按 rich[key] 渲染不同样式
+  // 共享的定位计算函数 - 确保 LabelLine 和 DynamicLabel 使用相同逻辑
+  const calculateAdjustedPosition = React.useCallback((camera) => {
+    // 获取摄像机的右方向向量（在摄像机坐标系中）
+    const cameraRight = new THREE.Vector3()
+    camera.getWorldDirection(cameraRight)
+    cameraRight.cross(camera.up).normalize()
+    
+    // 将摄像机右方向投影到XZ平面，确保水平方向
+    const horizontalDirection = new THREE.Vector3(cameraRight.x, 0, cameraRight.z)
+    if (horizontalDirection.length() > 0.001) {
+      horizontalDirection.normalize()
+    } else {
+      // 如果投影后长度太小，使用默认的右方向
+      horizontalDirection.set(1, 0, 0)
+    }
+    
+    // 计算从圆心到mid点的方向向量（指向圆心外）
+    const centerToMid = new THREE.Vector3(mid[0], 0, mid[2]) // 圆心在(0,0,0)
+    centerToMid.normalize()
+    
+    // 计算水平方向与圆心外方向的点积
+    const horizontalDotCenter = horizontalDirection.dot(centerToMid)
+    
+    // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
+    // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
+    const shouldGoRight = horizontalDotCenter > 0
+    
+    // 根据这个方向确定水平线的朝向
+    const horizontalOffset = shouldGoRight ? 1 : -1
+    
+    // 计算水平线的长度（使用3D空间中的实际距离）
+    const originalLength = Math.abs(end[0] - mid[0])
+    const horizontalLength = Math.max(originalLength, 0.3) // 最小长度
+    
+    // 计算新的位置 - 与 LabelLine 完全一致
+    const newX = mid[0] + horizontalDirection.x * horizontalLength * horizontalOffset
+    const newZ = mid[2] + horizontalDirection.z * horizontalLength * horizontalOffset
+    
+    return [newX, 0, newZ]
+  }, [mid, end])
+
+  // 状态管理动态端点位置
+  const [dynamicEndPosition, setDynamicEndPosition] = React.useState(end)
+
+  // 增强的富文本解析：支持 {key|内容}，按 rich[key] 渲染不同样式
   function renderRichLine(line, idx, position = labelPos) {
     // 匹配 {key|内容}
     const parts = []
@@ -236,24 +273,54 @@ const PieSlice = ({
     if (lastIndex < line.length) {
       parts.push({ text: line.slice(lastIndex), style: {} })
     }
+    
     // 返回数组，不用 Fragment
-    return parts.map((part, i) => (
-      <Text
-        key={`${idx}_${i}`}
-        color={part.style.color || labelColor}
-        fontFamily={part.style.fontFamily || labelFontFamily}
-        fontSize={part.style.fontSize || labelFontSize || 0.12}
-        anchorX={finalIsLeft ? 'right' : 'left'}
-        anchorY="middle"
-        outlineWidth={part.style.outlineWidth || '2.5%'}
-        outlineColor={part.style.outlineColor || '#000'}
-        outlineOpacity={part.style.outlineOpacity || 0.5}
-        position={[position[0], position[1] - idx * 0.15, position[2]]}
-        font="/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
-      >
-        {part.text}
-      </Text>
-    ))
+    return parts.map((part, i) => {
+      const style = part.style
+      const baseColor = style.color || labelColor
+      const baseFontSize = style.fontSize || labelFontSize || 0.12
+      const baseFontFamily = style.fontFamily || labelFontFamily
+      
+      // 支持更多样式属性
+      const outlineWidth = style.outlineWidth || '2.5%'
+      const outlineColor = style.outlineColor || '#000'
+      const outlineOpacity = style.outlineOpacity || 0.5
+      
+      // 计算位置偏移（支持行内样式）
+      const xOffset = style.xOffset || 0
+      const yOffset = style.yOffset || 0
+      const zOffset = style.zOffset || 0
+      
+      // 支持字体粗细
+      let fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
+      if (baseFontFamily === 'bold') {
+        fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_85_Bold.ttf"
+      } else if (baseFontFamily === 'monospace') {
+        fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
+      }
+      
+      return (
+        <Text
+          key={`${idx}_${i}`}
+          color={baseColor}
+          fontFamily={fontPath}
+          fontSize={baseFontSize}
+          anchorX={finalIsLeft ? 'right' : 'left'}
+          anchorY="middle"
+          outlineWidth={outlineWidth}
+          outlineColor={outlineColor}
+          outlineOpacity={outlineOpacity}
+          position={[
+            position[0] + xOffset, 
+            position[1] - idx * 0.15 + yOffset, 
+            position[2] + zOffset
+          ]}
+          font="/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
+        >
+          {part.text}
+        </Text>
+      )
+    })
   }
 
   return (
@@ -303,18 +370,25 @@ const PieSlice = ({
           </Text>
         </Billboard>
       )}
-      {/* labelLine 折线 */}
-      <LabelLine points={[start, mid, end]} color={lineColor} width={lineWidth} />
+      
       {/* 动态标签，位置与labelLine同步 */}
       <DynamicLabel 
         mid={mid}
         originalEnd={end}
         labelLines={labelLines}
         renderRichLine={renderRichLine}
-        isLeft={finalIsLeft}
-        labelColor={labelColor}
-        labelFontFamily={labelFontFamily}
-        labelFontSize={labelFontSize}
+        labelLineEndPosition={dynamicEndPosition} // 传递 labelLine 的端点位置
+      />
+      
+      {/* labelLine 折线 - 使用动态计算的位置 */}
+      <DynamicLabelLine 
+        start={start}
+        mid={mid}
+        end={dynamicEndPosition} // 使用动态端点位置
+        color={lineColor}
+        width={lineWidth}
+        calculateAdjustedPosition={calculateAdjustedPosition}
+        onPositionChange={setDynamicEndPosition} // 传递回调函数
       />
     </animated.group>
   )

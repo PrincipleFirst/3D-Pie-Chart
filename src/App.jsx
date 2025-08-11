@@ -13,19 +13,182 @@ function App() {
   const data = pieDataFromControls(controlValues)
   // 测试：为前3个扇区添加自定义 label 和 labelLine 样式
   if (data[0]) {
-    data[0].customLabel = ['自定义A', '测试123', '红色线3px']
+    data[0].customLabel = [
+      '{title|自定义A}', 
+      '{subtitle|测试123}', 
+      '{highlight|红色线3px}'
+    ]
     data[0].labelLineColor = '#ff0000'
     data[0].labelLineWidth = 1
+    data[0].labelStyle = {
+      color: '#ffffff',
+      fontSize: 0.12,
+      rich: {
+        title: {
+          color: '#ff6b6b',
+          fontSize: 0.14,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#000'
+        },
+        subtitle: {
+          color: '#4ecdc4',
+          fontSize: 0.10,
+          outlineWidth: '2%'
+        },
+        highlight: {
+          color: '#ff0000',
+          fontSize: 0.11,
+          outlineWidth: '4%',
+          outlineColor: '#fff'
+        }
+      }
+    }
   }
   if (data[1]) {
-    data[1].customLabel = ['自定义B', '蓝色线1px']
+    data[1].customLabel = [
+      '{title|自定义B}', 
+      '{info|蓝色线1px}',
+      '{value|34.00%}'
+    ]
     data[1].labelLineColor = '#0000ff'
     data[1].labelLineWidth = 1
+    data[1].labelStyle = {
+      color: '#ffffff',
+      fontSize: 0.12,
+      rich: {
+        title: {
+          color: '#4dabf7',
+          fontSize: 0.15,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#000'
+        },
+        info: {
+          color: '#74c0fc',
+          fontSize: 0.10,
+          outlineWidth: '2%'
+        },
+        value: {
+          color: '#339af0',
+          fontSize: 0.13,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#fff'
+        }
+      }
+    }
   }
   if (data[2]) {
-    data[2].customLabel = ['自定义C', '绿色线5px']
+    data[2].customLabel = [
+      '{title|自定义C}', 
+      '{data|0.4800}',
+      '{config|绿色线5px}',
+      '{percent|10.74%}'
+    ]
     data[2].labelLineColor = '#00ff00'
     data[2].labelLineWidth = 1
+    data[2].labelStyle = {
+      color: '#ffffff',
+      fontSize: 0.12,
+      rich: {
+        title: {
+          color: '#51cf66',
+          fontSize: 0.14,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#000'
+        },
+        data: {
+          color: '#69db7c',
+          fontSize: 0.11,
+          fontFamily: 'monospace',
+          outlineWidth: '2%'
+        },
+        config: {
+          color: '#8ce99a',
+          fontSize: 0.10,
+          outlineWidth: '2%'
+        },
+        percent: {
+          color: '#40c057',
+          fontSize: 0.12,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#fff'
+        }
+      }
+    }
+  }
+  
+  // 为其他扇区添加更多样式示例
+  if (data[3]) {
+    data[3].customLabel = [
+      '{header|数据统计}',
+      '{metric|14.00%}',
+      '{detail|增长趋势}'
+    ]
+    data[3].labelStyle = {
+      color: '#ffffff',
+      fontSize: 0.12,
+      rich: {
+        header: {
+          color: '#ffd43b',
+          fontSize: 0.13,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#000',
+          xOffset: 0.05
+        },
+        metric: {
+          color: '#fcc419',
+          fontSize: 0.15,
+          fontFamily: 'bold',
+          outlineWidth: '4%',
+          outlineColor: '#fff',
+          yOffset: -0.02
+        },
+        detail: {
+          color: '#ffe066',
+          fontSize: 0.10,
+          outlineWidth: '2%',
+          xOffset: -0.03
+        }
+      }
+    }
+  }
+  
+  if (data[4]) {
+    data[4].customLabel = [
+      '{icon|📊}',
+      '{label|分析报告}',
+      '{value|11.00%}'
+    ]
+    data[4].labelStyle = {
+      color: '#ffffff',
+      fontSize: 0.12,
+      rich: {
+        icon: {
+          color: '#20c997',
+          fontSize: 0.16,
+          outlineWidth: '3%',
+          outlineColor: '#000'
+        },
+        label: {
+          color: '#38d9a9',
+          fontSize: 0.12,
+          fontFamily: 'bold',
+          outlineWidth: '2%'
+        },
+        value: {
+          color: '#63e6be',
+          fontSize: 0.14,
+          fontFamily: 'bold',
+          outlineWidth: '3%',
+          outlineColor: '#fff'
+        }
+      }
+    }
   }
   const {
     innerRadius,
