@@ -10,37 +10,15 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Billboard from './Billboard'
 import { palette } from './theme'
+import CSS2DLabels from './CSS2DLabels'
 
 import { Line } from '@react-three/drei'
 
 const springConfig = springConfigs.wobbly
 
-// 动态标签组件，位置与labelLine同步
-const DynamicLabel = ({ 
-  mid, 
-  originalEnd, 
-  labelLines, 
-  renderRichLine, 
-  labelLineEndPosition  // 接收 labelLine 的端点位置
-}) => {
-  // 直接使用 labelLine 的端点位置，不再独立计算
-  const labelPosition = labelLineEndPosition || originalEnd
-  
-  return (
-    <group>
-      {labelLines.map((line, idx) => (
-        <React.Fragment key={idx}>
-          {/* 为每个 Text 组件单独应用 Billboard 效果 */}
-          {renderRichLine(line, idx, labelPosition).map((textComponent, textIdx) => (
-            <Billboard key={`${idx}_${textIdx}`}>
-              {textComponent}
-            </Billboard>
-          ))}
-        </React.Fragment>
-      ))}
-    </group>
-  )
-}
+
+
+
 
 // 动态标签线组件，位置与标签完全同步
 const DynamicLabelLine = ({ 
@@ -252,77 +230,6 @@ const PieSlice = ({
   // 状态管理动态端点位置
   const [dynamicEndPosition, setDynamicEndPosition] = React.useState(end)
 
-  // 增强的富文本解析：支持 {key|内容}，按 rich[key] 渲染不同样式
-  function renderRichLine(line, idx, position = labelPos) {
-    // 匹配 {key|内容}
-    const parts = []
-    let lastIndex = 0
-    const regex = /\{(\w+)\|([^}]+)\}/g
-    let match
-    let keyIdx = 0
-    while ((match = regex.exec(line)) !== null) {
-      if (match.index > lastIndex) {
-        // 普通文本
-        parts.push({ text: line.slice(lastIndex, match.index), style: {} })
-      }
-      const key = match[1]
-      const text = match[2]
-      parts.push({ text, style: rich[key] || {}, key: key + '_' + keyIdx++ })
-      lastIndex = regex.lastIndex
-    }
-    if (lastIndex < line.length) {
-      parts.push({ text: line.slice(lastIndex), style: {} })
-    }
-    
-    // 返回数组，不用 Fragment
-    return parts.map((part, i) => {
-      const style = part.style
-      const baseColor = style.color || labelColor
-      const baseFontSize = style.fontSize || labelFontSize || 0.12
-      const baseFontFamily = style.fontFamily || labelFontFamily
-      
-      // 支持更多样式属性
-      const outlineWidth = style.outlineWidth || '2.5%'
-      const outlineColor = style.outlineColor || '#000'
-      const outlineOpacity = style.outlineOpacity || 0.5
-      
-      // 计算位置偏移（支持行内样式）
-      const xOffset = style.xOffset || 0
-      const yOffset = style.yOffset || 0
-      const zOffset = style.zOffset || 0
-      
-      // 支持字体粗细
-      let fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
-      if (baseFontFamily === 'bold') {
-        fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_85_Bold.ttf"
-      } else if (baseFontFamily === 'monospace') {
-        fontPath = "/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
-      }
-      
-      return (
-        <Text
-          key={`${idx}_${i}`}
-          color={baseColor}
-          fontFamily={fontPath}
-          fontSize={baseFontSize}
-          anchorX={finalIsLeft ? 'right' : 'left'}
-          anchorY="middle"
-          outlineWidth={outlineWidth}
-          outlineColor={outlineColor}
-          outlineOpacity={outlineOpacity}
-          position={[
-            position[0] + xOffset, 
-            position[1] - idx * 0.15 + yOffset, 
-            position[2] + zOffset
-          ]}
-          font="/fonts/阿里巴巴普惠体 2.0/Alibaba_PuHuiTi_2.0_55_Regular_55_Regular.ttf"
-        >
-          {part.text}
-        </Text>
-      )
-    })
-  }
-
   return (
     <animated.group key={i} position={springProps.position}>
       <animated.mesh
@@ -371,13 +278,16 @@ const PieSlice = ({
         </Billboard>
       )}
       
-      {/* 动态标签，位置与labelLine同步 */}
-      <DynamicLabel 
-        mid={mid}
-        originalEnd={end}
+      {/* CSS2D标签，位置与labelLine同步 */}
+      <CSS2DLabels 
         labelLines={labelLines}
-        renderRichLine={renderRichLine}
-        labelLineEndPosition={dynamicEndPosition} // 传递 labelLine 的端点位置
+        position={dynamicEndPosition}
+        isLeft={finalIsLeft}
+        labelStyle={labelStyle}
+        onPositionChange={(pos) => {
+          // 可以在这里处理2D位置变化
+          console.log('Label 2D position:', pos)
+        }}
       />
       
       {/* labelLine 折线 - 使用动态计算的位置 */}
