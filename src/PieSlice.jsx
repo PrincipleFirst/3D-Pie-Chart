@@ -234,25 +234,19 @@ const PieSlice = ({
     <animated.group key={i} position={springProps.position}>
       <animated.mesh
         rotation={[Math.PI / 2, 0, 0]}
-        scale={springProps.height.to((height) => [1, 1, height])}
+        scale={[1, 1, height]}
         onClick={(evt) => {
           onClick?.(i)
           evt.stopPropagation(true)
         }}
         receiveShadow
-        // onPointerEnter={() => setActiveSlice(i)}
-        // onPointerLeave={() => setActiveSlice(undefined)}
       >
-        {/* <shapeGeometry args={[shape]} /> */}
         <extrudeGeometry args={extrudeGeometryArgs} />
-        {/* <cylinderGeometry args={[1, 1, 0.4, 64]} /> */}
-        {/* <meshPhongMaterial color={color} /> */}
         <meshStandardMaterial
           color={color}
           roughness={roughness}
           metalness={metalness}
         />
-        {/* <meshBasicMaterial color={color} side={BackSide} /> */}
       </animated.mesh>
       {showValue && (
         <Billboard>
