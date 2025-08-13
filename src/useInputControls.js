@@ -223,8 +223,8 @@ const useInputControls = () => {
               type: LevaInputs.NUMBER,
               max: 10,
               step: 0.05,
-              value: 0.2,
-              ...urlSync('amb', 0.2),
+              value: 1.2,
+              ...urlSync('amb', 1.2),
             },
             spotLightIntensity: {
               label: 'spot',
@@ -232,8 +232,8 @@ const useInputControls = () => {
               type: LevaInputs.NUMBER,
               max: 10,
               step: 0.05,
-              value: 0.75,
-              ...urlSync('spt', 0.75),
+              value: 1.75,
+              ...urlSync('spt', 1.75),
             },
             environmentFile: {
               label: 'environment',

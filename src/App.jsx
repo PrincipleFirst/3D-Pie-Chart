@@ -6,6 +6,7 @@ import Effects from './Effects'
 import Pie from './Pie'
 import Turntable from './Turntable'
 import useInputControls, { pieDataFromControls } from './useInputControls'
+import CSS2DRendererProvider from './CSS2DRenderer'
 
 function App() {
   const orbitControlsRef = React.useRef()
@@ -227,35 +228,37 @@ function App() {
         titleBar={{ title: 'Customize Pie' }}
       />
       <Canvas shadows dpr={[1, 2]} camera={{ position: [3, 3, 4], fov: 50 }}>
-        <ambientLight intensity={ambientLightIntensity} />
+        <CSS2DRendererProvider>
+          <ambientLight intensity={ambientLightIntensity} />
 
-        <spotLight
-          intensity={spotLightIntensity}
-          angle={0.1}
-          penumbra={1}
-          position={[10, 15, 10]}
-          castShadow
-        />
+          <spotLight
+            intensity={spotLightIntensity}
+            angle={0.1}
+            penumbra={1}
+            position={[10, 15, 10]}
+            castShadow
+          />
 
-        <Suspense fallback={null}>
-          <Turntable enabled={spinSpeed > 0} speed={spinSpeed * 0.02}>
-            <Pie
-              data={data}
-              innerRadius={innerRadius}
-              outerRadius={outerRadius}
-              cornerRadius={cornerRadius}
-              padAngle={padAngle}
-              roughness={roughness}
-              metalness={metalness}
-              valueLabelPosition={valueLabelPosition}
-              showValues={showValues}
-              valuesAsPercent={valuesAsPercent}
-              onClickSlice={(i) =>
-                set({ [`explode${i}`]: !controlValues[`explode${i}`] })
-              }
-            />
-          </Turntable>
-        </Suspense>
+          <Suspense fallback={null}>
+            <Turntable enabled={spinSpeed > 0} speed={spinSpeed * 0.02}>
+              <Pie
+                data={data}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                cornerRadius={cornerRadius}
+                padAngle={padAngle}
+                roughness={roughness}
+                metalness={metalness}
+                valueLabelPosition={valueLabelPosition}
+                showValues={showValues}
+                valuesAsPercent={valuesAsPercent}
+                onClickSlice={(i) =>
+                  set({ [`explode${i}`]: !controlValues[`explode${i}`] })
+                }
+              />
+            </Turntable>
+          </Suspense>
+        </CSS2DRendererProvider>
         {addEnvironment && (
           <Suspense fallback={null}>
             <Environment path="/hdri/" files={environmentFile} />

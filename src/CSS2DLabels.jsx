@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react'
-import { useThree, useFrame } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
+import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import * as THREE from 'three'
 
 // 主标签组件 - 使用CSS2DRenderer
@@ -11,25 +12,22 @@ const CSS2DLabels = ({
   onPositionChange 
 }) => {
   const ref = useRef()
-  const { camera, scene } = useThree()
+  const { scene } = useThree()
   
   // 创建CSS2D元素
   useEffect(() => {
-    if (!ref.current) return
+    if (!ref.current || !scene.userData.labelRenderer) return
     
-    // 创建CSS2D元素
+    // 创建标签容器
     const labelDiv = document.createElement('div')
     labelDiv.className = 'css2d-label'
     labelDiv.style.cssText = `
-      position: absolute;
       pointer-events: none;
       white-space: nowrap;
       font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
       color: white;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-      transform: translate(-50%, -50%);
       ${isLeft ? 'text-align: right;' : 'text-align: left;'}
-      z-index: 1000;
     `
     
     // 生成HTML内容
@@ -81,37 +79,30 @@ const CSS2DLabels = ({
     
     labelDiv.innerHTML = htmlContent
     
-    // 添加到DOM
-    document.body.appendChild(labelDiv)
-    ref.current.labelDiv = labelDiv
+    // 创建CSS2DObject
+    const labelObject = new CSS2DObject(labelDiv)
     
-    return () => {
-      if (labelDiv.parentNode) {
-        labelDiv.parentNode.removeChild(labelDiv)
-      }
-    }
-  }, [labelLines, isLeft, labelStyle])
-  
-  // 更新位置
-  useFrame(() => {
-    if (!ref.current || !ref.current.labelDiv) return
+    // 设置标签位置偏移
+    const offsetX = isLeft ? -0.5 : 0.5
+    labelObject.position.set(offsetX, 0, 0)
     
-    const labelDiv = ref.current.labelDiv
-    const vector = new THREE.Vector3()
-    vector.setFromMatrixPosition(ref.current.matrixWorld)
-    vector.project(camera)
-    
-    const x = (vector.x * 0.5 + 0.5) * window.innerWidth
-    const y = (-vector.y * 0.5 + 0.5) * window.innerHeight
-    
-    labelDiv.style.left = x + 'px'
-    labelDiv.style.top = y + 'px'
+    // 添加到3D场景
+    ref.current.add(labelObject)
+    ref.current.labelObject = labelObject
     
     // 通知位置变化
     if (onPositionChange) {
-      onPositionChange([x, y])
+      const worldPosition = new THREE.Vector3()
+      labelObject.getWorldPosition(worldPosition)
+      onPositionChange([worldPosition.x, worldPosition.y, worldPosition.z])
     }
-  })
+    
+    return () => {
+      if (labelObject && ref.current) {
+        ref.current.remove(labelObject)
+      }
+    }
+  }, [labelLines, isLeft, labelStyle, onPositionChange, scene.userData.labelRenderer])
   
   return (
     <group ref={ref} position={position}>
