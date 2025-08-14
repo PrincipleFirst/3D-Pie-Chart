@@ -5,7 +5,7 @@ import {
 } from '@react-spring/three'
 import { Text } from '@react-three/drei'
 import { format } from 'd3-format'
-import React from 'react'
+import React, { useMemo, useCallback, useLayoutEffect, useState, useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import Billboard from './Billboard'
@@ -31,24 +31,29 @@ const DynamicLabelLine = ({
   onPositionChange  // 回调函数，通知位置变化
 }) => {
   const { camera } = useThree()
-  const [adjustedPoints, setAdjustedPoints] = React.useState([start, mid, end])
   
+  // 使用 useFrame 每帧更新位置，实现动态效果
   useFrame(() => {
     if (!start || !mid || !end || !calculateAdjustedPosition) return
     
-    // 使用共享的定位计算函数
+    // 每帧计算新的位置
     const newEnd = calculateAdjustedPosition(camera)
-    setAdjustedPoints([start, mid, newEnd])
     
-    // 通知父组件位置变化
-    if (onPositionChange) {
-      onPositionChange(newEnd)
-    }
+    // 直接更新本地状态，避免频繁的回调调用
+    setCurrentEnd(newEnd)
   })
+  
+  // 初始渲染时使用传入的end位置
+  const [currentEnd, setCurrentEnd] = useState(end)
+  
+  // 当end prop变化时更新当前端点
+  useEffect(() => {
+    setCurrentEnd(end)
+  }, [end])
   
   return (
     <Line
-      points={adjustedPoints}
+      points={[start, mid, currentEnd]}
       color={color}
       lineWidth={width}
       dashed={false}
@@ -109,85 +114,105 @@ const PieSlice = ({
     config: springConfig,
   })
 
-  const extrudeGeometryArgs = React.useMemo(() => [shape, extrudeSettings], [
+  const extrudeGeometryArgs = useMemo(() => [shape, extrudeSettings], [
     shape,
     extrudeSettings,
   ])
 
-  // ECharts 风格 labelLineStyle 支持
-  const labelLineStyle = datum.labelLineStyle || {}
-  const SCALE = 0.01
-  const r = outerRadius * SCALE
-  const offset1 = (labelLineStyle.length !== undefined ? labelLineStyle.length * SCALE : 0.15 * outerRadius * SCALE)
-  const offset2 = (labelLineStyle.length2 !== undefined ? labelLineStyle.length2 * SCALE : 0.3 * outerRadius * SCALE)
+  // ECharts 风格 labelLineStyle 支持 - 使用 useMemo 缓存计算结果
+  const labelLineData = useMemo(() => {
+    const labelLineStyle = datum.labelLineStyle || {}
+    const SCALE = 0.01
+    const r = outerRadius * SCALE
+    const offset1 = (labelLineStyle.length !== undefined ? labelLineStyle.length * SCALE : 0.15 * outerRadius * SCALE)
+    const offset2 = (labelLineStyle.length2 !== undefined ? labelLineStyle.length2 * SCALE : 0.3 * outerRadius * SCALE)
 
-  const start = [Math.cos(theta) * r, 0, Math.sin(theta) * r]
-  const mid = [Math.cos(theta) * (r + offset1), 0, Math.sin(theta) * (r + offset1)]
+    const start = [Math.cos(theta) * r, 0, Math.sin(theta) * r]
+    const mid = [Math.cos(theta) * (r + offset1), 0, Math.sin(theta) * (r + offset1)]
+    
+    // 计算从圆心到mid点的方向向量（指向圆心外）
+    const centerToMid = [mid[0], 0, mid[2]] // 圆心在(0,0,0)
+    const centerToMidLength = Math.sqrt(centerToMid[0] * centerToMid[0] + centerToMid[2] * centerToMid[2])
+    const centerToMidNormalized = [centerToMid[0] / centerToMidLength, 0, centerToMid[2] / centerToMidLength]
+    
+    // 计算第一段线的方向向量（从start到mid）
+    const firstLineDirection = [mid[0] - start[0], 0, mid[2] - start[2]]
+    const firstLineLength = Math.sqrt(firstLineDirection[0] * firstLineDirection[0] + firstLineDirection[2] * firstLineDirection[2])
+    const firstLineNormalized = [firstLineDirection[0] / firstLineLength, 0, firstLineDirection[2] / firstLineLength]
+    
+    // 计算水平方向的单位向量（向右）
+    const horizontalDirection = [1, 0, 0]
+    
+    // 计算水平方向与圆心外方向的点积
+    const horizontalDotCenter = horizontalDirection[0] * centerToMidNormalized[0] + horizontalDirection[2] * centerToMidNormalized[2]
+    
+    // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
+    // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
+    const shouldGoRight = horizontalDotCenter > 0
+    
+    // 先按这个方向计算endX
+    let endX = shouldGoRight ? mid[0] + offset2 : mid[0] - offset2
+    
+    // 计算第二段线的方向向量（从mid到end）
+    const secondLineDirection = [endX - mid[0], 0, 0] // 水平线
+    
+    // 计算第一段线和第二段线的点积
+    const dotProduct = firstLineNormalized[0] * secondLineDirection[0] + firstLineNormalized[2] * secondLineDirection[2]
+    
+    // 如果点积为负，说明夹角大于90度，需要调整方向
+    if (dotProduct < 0) {
+      endX = shouldGoRight ? mid[0] - offset2 : mid[0] + offset2
+    }
+    
+    const end = [endX, 0, mid[2]]
+    
+    // 重新计算isLeft，因为endX可能已经改变方向
+    const finalIsLeft = endX < mid[0]
+    
+    // 标签位置将根据摄像机动态调整，这里先设置一个初始位置
+    const labelPos = [endX, 0, mid[2]]
+    
+    return { start, mid, end, finalIsLeft, labelPos }
+  }, [datum.labelLineStyle, outerRadius, theta])
   
-  // 计算从圆心到mid点的方向向量（指向圆心外）
-  const centerToMid = [mid[0], 0, mid[2]] // 圆心在(0,0,0)
-  const centerToMidLength = Math.sqrt(centerToMid[0] * centerToMid[0] + centerToMid[2] * centerToMid[2])
-  const centerToMidNormalized = [centerToMid[0] / centerToMidLength, 0, centerToMid[2] / centerToMidLength]
-  
-  // 计算第一段线的方向向量（从start到mid）
-  const firstLineDirection = [mid[0] - start[0], 0, mid[2] - start[2]]
-  const firstLineLength = Math.sqrt(firstLineDirection[0] * firstLineDirection[0] + firstLineDirection[2] * firstLineDirection[2])
-  const firstLineNormalized = [firstLineDirection[0] / firstLineLength, 0, firstLineDirection[2] / firstLineLength]
-  
-  // 计算水平方向的单位向量（向右）
-  const horizontalDirection = [1, 0, 0]
-  
-  // 计算水平方向与圆心外方向的点积
-  const horizontalDotCenter = horizontalDirection[0] * centerToMidNormalized[0] + horizontalDirection[2] * centerToMidNormalized[2]
-  
-  // 如果水平方向与圆心外方向基本一致（点积接近1），则向右延伸
-  // 如果水平方向与圆心外方向相反（点积接近-1），则向左延伸
-  const shouldGoRight = horizontalDotCenter > 0
-  
-  // 先按这个方向计算endX
-  let endX = shouldGoRight ? mid[0] + offset2 : mid[0] - offset2
-  
-  // 计算第二段线的方向向量（从mid到end）
-  const secondLineDirection = [endX - mid[0], 0, 0] // 水平线
-  
-  // 计算第一段线和第二段线的点积
-  const dotProduct = firstLineNormalized[0] * secondLineDirection[0] + firstLineNormalized[2] * secondLineDirection[2]
-  
-  // 如果点积为负，说明夹角大于90度，需要调整方向
-  if (dotProduct < 0) {
-    endX = shouldGoRight ? mid[0] - offset2 : mid[0] + offset2
-  }
-  
-  const end = [endX, 0, mid[2]]
-  
-  // 重新计算isLeft，因为endX可能已经改变方向
-  const finalIsLeft = endX < mid[0]
-  
-  // 标签位置将根据摄像机动态调整，这里先设置一个初始位置
-  const labelPos = [endX, 0, mid[2]]
+  // 解构计算结果
+  const { start, mid, end, finalIsLeft, labelPos } = labelLineData
 
-  // labelLine 样式
-  const lineColor = labelLineStyle.color || datum.labelLineColor || color
-  const lineWidth = labelLineStyle.width || datum.labelLineWidth || 2
+  // labelLine 样式 - 使用 useMemo 缓存
+  const lineStyle = useMemo(() => {
+    const labelLineStyle = datum.labelLineStyle || {}
+    return {
+      color: labelLineStyle.color || datum.labelLineColor || color,
+      width: labelLineStyle.width || datum.labelLineWidth || 2
+    }
+  }, [datum.labelLineStyle, datum.labelLineColor, datum.labelLineWidth, color])
 
-  // ECharts 风格 labelStyle 支持
-  const labelStyle = datum.labelStyle || {}
-  const rich = labelStyle.rich || {}
-  const labelColor = labelStyle.color || color
-  const labelFontFamily = labelStyle.fontFamily
-  const labelFontSize = labelStyle.fontSize
+  // ECharts 风格 labelStyle 支持 - 使用 useMemo 缓存
+  const labelStyle = useMemo(() => {
+    const baseLabelStyle = datum.labelStyle || {}
+    return {
+      ...baseLabelStyle,
+      rich: baseLabelStyle.rich || {},
+      color: baseLabelStyle.color || color,
+      fontFamily: baseLabelStyle.fontFamily,
+      fontSize: baseLabelStyle.fontSize
+    }
+  }, [datum.labelStyle, color])
 
-  // label 多行内容，优先用 customLabel
-  const labelLines = datum.customLabel && Array.isArray(datum.customLabel) && datum.customLabel.length > 0
-    ? datum.customLabel
-    : [
-        label,
-        arc.value.toFixed(4),
-        (percent * 100).toFixed(2) + '%'
-      ]
+  // label 多行内容，优先用 customLabel - 使用 useMemo 缓存
+  const labelLines = useMemo(() => {
+    if (datum.customLabel && Array.isArray(datum.customLabel) && datum.customLabel.length > 0) {
+      return datum.customLabel
+    }
+    return [
+      label,
+      arc.value.toFixed(4),
+      (percent * 100).toFixed(2) + '%'
+    ]
+  }, [datum.customLabel, label, arc.value, percent])
 
   // 共享的定位计算函数 - 确保 LabelLine 和 DynamicLabel 使用相同逻辑
-  const calculateAdjustedPosition = React.useCallback((camera) => {
+  const calculateAdjustedPosition = useCallback((camera) => {
     // 获取摄像机的右方向向量（在摄像机坐标系中）
     const cameraRight = new THREE.Vector3()
     camera.getWorldDirection(cameraRight)
@@ -227,8 +252,13 @@ const PieSlice = ({
     return [newX, 0, newZ]
   }, [mid, end])
 
-  // 状态管理动态端点位置
-  const [dynamicEndPosition, setDynamicEndPosition] = React.useState(end)
+  // 状态管理动态端点位置 - 初始化为计算出的end位置
+  const [dynamicEndPosition, setDynamicEndPosition] = useState(end)
+  
+  // 使用 useEffect 在组件挂载时设置初始位置
+  useEffect(() => {
+    setDynamicEndPosition(end)
+  }, [end])
 
   return (
     <animated.group key={i} position={springProps.position}>
@@ -278,21 +308,17 @@ const PieSlice = ({
         position={dynamicEndPosition}
         isLeft={finalIsLeft}
         labelStyle={labelStyle}
-        onPositionChange={(pos) => {
-          // 可以在这里处理2D位置变化
-          console.log('Label 2D position:', pos)
-        }}
       />
       
       {/* labelLine 折线 - 使用动态计算的位置 */}
       <DynamicLabelLine 
         start={start}
         mid={mid}
-        end={dynamicEndPosition} // 使用动态端点位置
-        color={lineColor}
-        width={lineWidth}
+        end={end} // 使用初始的end位置
+        color={lineStyle.color}
+        width={lineStyle.width}
         calculateAdjustedPosition={calculateAdjustedPosition}
-        onPositionChange={setDynamicEndPosition} // 传递回调函数
+        onPositionChange={setDynamicEndPosition} // 传递回调函数，更新CSS2D标签位置
       />
     </animated.group>
   )

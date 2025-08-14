@@ -14,25 +14,10 @@ const CSS2DLabels = ({
   const ref = useRef()
   const { scene } = useThree()
   
-  // 创建CSS2D元素
-  useEffect(() => {
-    if (!ref.current || !scene.userData.labelRenderer) return
-    
-    // 创建标签容器
-    const labelDiv = document.createElement('div')
-    labelDiv.className = 'css2d-label'
-    labelDiv.style.cssText = `
-      pointer-events: none;
-      white-space: nowrap;
-      font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
-      color: white;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-      ${isLeft ? 'text-align: right;' : 'text-align: left;'}
-    `
-    
-    // 生成HTML内容
+  // 使用 useMemo 缓存 HTML 内容，避免每次重新生成
+  const htmlContent = useMemo(() => {
     const rich = labelStyle.rich || {}
-    let htmlContent = ''
+    let content = ''
     
     labelLines.forEach((line, idx) => {
       // 解析富文本格式 {key|内容}
@@ -56,7 +41,7 @@ const CSS2DLabels = ({
       }
       
       // 生成HTML
-      htmlContent += '<div class="label-line" style="margin-bottom: 2px; line-height: 1.2;">'
+      content += '<div class="label-line" style="margin-bottom: 2px; line-height: 1.2;">'
       parts.forEach((part, i) => {
         const style = part.style
         const baseColor = style.color || labelStyle.color || 'white'
@@ -66,7 +51,7 @@ const CSS2DLabels = ({
           `${style.outlineWidth} ${style.outlineWidth} ${style.outlineColor || 'black'}` : 
           '2px 2px 4px rgba(0,0,0,0.8)'
         
-        htmlContent += `<span style="
+        content += `<span style="
           color: ${baseColor}; 
           font-size: ${baseFontSize}; 
           font-weight: ${fontWeight}; 
@@ -74,9 +59,30 @@ const CSS2DLabels = ({
           text-shadow: ${textShadow};
         ">${part.text}</span>`
       })
-      htmlContent += '</div>'
+      content += '</div>'
     })
     
+    return content
+  }, [labelLines, labelStyle])
+  
+  // 使用 useMemo 缓存样式字符串，避免每次重新计算
+  const labelStyles = useMemo(() => `
+    pointer-events: none;
+    white-space: nowrap;
+    font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    ${isLeft ? 'text-align: right;' : 'text-align: left;'}
+  `, [isLeft])
+  
+  // 创建CSS2D元素
+  useEffect(() => {
+    if (!ref.current || !scene.userData.labelRenderer) return
+    
+    // 创建标签容器
+    const labelDiv = document.createElement('div')
+    labelDiv.className = 'css2d-label'
+    labelDiv.style.cssText = labelStyles
     labelDiv.innerHTML = htmlContent
     
     // 创建CSS2DObject
@@ -90,19 +96,22 @@ const CSS2DLabels = ({
     ref.current.add(labelObject)
     ref.current.labelObject = labelObject
     
-    // 通知位置变化
-    if (onPositionChange) {
-      const worldPosition = new THREE.Vector3()
-      labelObject.getWorldPosition(worldPosition)
-      onPositionChange([worldPosition.x, worldPosition.y, worldPosition.z])
-    }
-    
     return () => {
       if (labelObject && ref.current) {
         ref.current.remove(labelObject)
       }
     }
-  }, [labelLines, isLeft, labelStyle, onPositionChange, scene.userData.labelRenderer])
+  }, [htmlContent, labelStyles, scene.userData.labelRenderer])
+  
+  // 监听位置变化，更新标签位置
+  useEffect(() => {
+    if (!ref.current || !ref.current.labelObject || !onPositionChange) return
+    
+    // 通知位置变化
+    const worldPosition = new THREE.Vector3()
+    ref.current.labelObject.getWorldPosition(worldPosition)
+    onPositionChange([worldPosition.x, worldPosition.y, worldPosition.z])
+  }, [position, onPositionChange])
   
   return (
     <group ref={ref} position={position}>

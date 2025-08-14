@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
@@ -6,6 +6,13 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 const CSS2DRendererProvider = ({ children }) => {
   const { scene, camera, gl } = useThree()
   const labelRendererRef = useRef()
+  
+  // 使用 useCallback 缓存事件处理函数
+  const handleResize = useCallback(() => {
+    if (labelRendererRef.current) {
+      labelRendererRef.current.setSize(window.innerWidth, window.innerHeight)
+    }
+  }, [])
   
   useEffect(() => {
     if (!labelRendererRef.current) {
@@ -26,12 +33,6 @@ const CSS2DRendererProvider = ({ children }) => {
     }
     
     // 窗口大小变化处理
-    const handleResize = () => {
-      if (labelRendererRef.current) {
-        labelRendererRef.current.setSize(window.innerWidth, window.innerHeight)
-      }
-    }
-    
     window.addEventListener('resize', handleResize)
     
     return () => {
@@ -40,7 +41,7 @@ const CSS2DRendererProvider = ({ children }) => {
         labelRendererRef.current.domElement.parentNode.removeChild(labelRendererRef.current.domElement)
       }
     }
-  }, [scene])
+  }, [scene, handleResize])
   
   // 渲染标签
   useFrame(() => {
