@@ -5,7 +5,7 @@ import {
 } from '@react-spring/three'
 
 
-import React, { useMemo, useCallback, useLayoutEffect, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useCallback, useState, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -250,15 +250,79 @@ const PieSlice = ({
   // 状态管理动态端点位置 - 初始化为计算出的end位置
   const [dynamicEndPosition, setDynamicEndPosition] = useState(end)
   
+  // 状态管理标签位置 - 初始化为计算出的标签位置
+  const [labelPosition, setLabelPosition] = useState(() => {
+    // 初始化时计算标签位置
+    if (labelOffset && labelOffset > 0) {
+      // 有偏移量：使用新的动态偏移逻辑
+      const directionX = end[0] - mid[0]
+      const directionZ = end[2] - mid[2]
+      const length = Math.sqrt(directionX * directionX + directionZ * directionZ)
+      if (length > 0) {
+        const normalizedX = directionX / length
+        const normalizedZ = directionZ / length
+        return [end[0] + normalizedX * labelOffset, 0, end[2] + normalizedZ * labelOffset]
+      }
+    }
+    // 没有偏移量：使用原来的逻辑，根据isLeft判断左右
+    const isLeft = end[0] < mid[0]
+    if (isLeft) {
+      return [end[0], 0, end[2]]
+    } else {
+      return [end[0], 0, end[2]]
+    }
+  })
+  
   // 使用 useEffect 在组件挂载时设置初始位置
   useEffect(() => {
     setDynamicEndPosition(end)
-  }, [end])
+    // 同时更新标签初始位置
+    if (labelOffset && labelOffset > 0) {
+      // 有偏移量：使用新的动态偏移逻辑
+      const directionX = end[0] - mid[0]
+      const directionZ = end[2] - mid[2]
+      const length = Math.sqrt(directionX * directionX + directionZ * directionZ)
+      if (length > 0) {
+        const normalizedX = directionX / length
+        const normalizedZ = directionZ / length
+        setLabelPosition([end[0] + normalizedX * labelOffset, 0, end[2] + normalizedZ * labelOffset])
+      }
+    } else {
+      // 没有偏移量：使用原来的逻辑，根据isLeft判断左右
+      const isLeft = end[0] < mid[0]
+      if (isLeft) {
+        setLabelPosition([end[0], 0, end[2]])
+      } else {
+        setLabelPosition([end[0], 0, end[2]])
+      }
+    }
+  }, [end, mid, labelOffset])
   
   // 优化位置更新，减少不必要的重新渲染
   const handlePositionChange = useCallback((newPosition) => {
     setDynamicEndPosition(newPosition)
-  }, [])
+    
+    // 同时更新标签位置
+    if (labelOffset && labelOffset > 0) {
+      // 有偏移量：使用新的动态偏移逻辑
+      const directionX = newPosition[0] - mid[0]
+      const directionZ = newPosition[2] - mid[2]
+      const length = Math.sqrt(directionX * directionX + directionZ * directionZ)
+      if (length > 0) {
+        const normalizedX = directionX / length
+        const normalizedZ = directionZ / length
+        setLabelPosition([newPosition[0] + normalizedX * labelOffset, 0, newPosition[2] + normalizedZ * labelOffset])
+      }
+    } else {
+      // 没有偏移量：使用原来的逻辑，根据isLeft判断左右
+      const isLeft = newPosition[0] < mid[0]
+      if (isLeft) {
+        setLabelPosition([newPosition[0], 0, newPosition[2]])
+      } else {
+        setLabelPosition([newPosition[0], 0, newPosition[2]])
+      }
+    }
+  }, [mid, labelOffset])
 
   return (
     <animated.group key={i} position={springProps.position}>
@@ -283,10 +347,10 @@ const PieSlice = ({
       {/* CSS2D标签，位置与labelLine同步 */}
       <CSS2DLabels 
         labelLines={labelLines}
-        position={dynamicEndPosition}
+        position={labelPosition}  // 使用计算好的标签最终位置
         isLeft={finalIsLeft}
         labelStyle={labelStyle}
-        labelOffset={labelOffset}
+        // 不再需要 labelOffset，因为位置已经计算好了
       />
       
       {/* labelLine 折线 - 使用动态计算的位置 */}

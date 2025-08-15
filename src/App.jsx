@@ -1,4 +1,4 @@
-import { ContactShadows, Environment, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Environment, OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Leva } from 'leva'
 import React, { Suspense } from 'react'
@@ -18,8 +18,12 @@ function App() {
     data[0].labelLineColor = '#ff0000'
     data[0].labelLineWidth = 1
     data[0].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
+    }
+    data[0].labelLineStyle = {
+      labelOffset: 30,
     }
     // 添加复杂多行 HTML 富文本标签
     data[0].label = "<div style='text-align: center;'>" +
@@ -36,6 +40,7 @@ function App() {
     data[1].labelLineColor = '#0000ff'
     data[1].labelLineWidth = 1
     data[1].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -56,6 +61,7 @@ function App() {
     data[2].labelLineColor = '#00ff00'
     data[2].labelLineWidth = 1
     data[2].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -76,6 +82,7 @@ function App() {
   // 为其他扇区添加更多样式示例
   if (data[3]) {
     data[3].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -95,6 +102,7 @@ function App() {
   
   if (data[4]) {
     data[4].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -115,6 +123,7 @@ function App() {
   // 如果有更多扇区，继续添加富文本示例
   if (data[5]) {
     data[5].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -134,6 +143,7 @@ function App() {
 
   if (data[6]) {
     data[6].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -153,6 +163,7 @@ function App() {
 
   if (data[7]) {
     data[7].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -172,6 +183,7 @@ function App() {
 
   if (data[8]) {
     data[8].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -191,6 +203,7 @@ function App() {
 
   if (data[9]) {
     data[9].labelStyle = {
+      labelOffset: 100,
       color: '#ffffff',
       fontSize: 0.12,
     }
@@ -289,7 +302,7 @@ function App() {
           blur={1.5}
           far={0.8}
         />
-        {/* <GizmoHelper
+        <GizmoHelper
           alignment={'bottom-left'}
           margin={[80, 80]}
           onTarget={() => orbitControlsRef?.current?.target}
@@ -299,7 +312,7 @@ function App() {
             axisColors={['red', 'green', 'blue']}
             labelColor={'white'}
           />
-        </GizmoHelper> */}
+        </GizmoHelper>
         <OrbitControls
           ref={orbitControlsRef}
           // minPolarAngle={Math.PI / 2}
@@ -331,21 +344,6 @@ function App() {
         }}
       >
         {title}
-      </div>
-      <div className="absolute bottom-0 p-2 text-xs text-gray-500">
-        Made with 😈&nbsp; by{' '}
-        <a
-          href="https://peterbeshai.com"
-          className="font-semibold hover:underline"
-        >
-          Peter Beshai
-        </a>
-        <a
-          href="https://github.com/pbeshai/3dpie"
-          className="ml-2 font-medium hover:underline"
-        >
-          GitHub
-        </a>
       </div>
     </div>
   )
