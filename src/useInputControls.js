@@ -530,7 +530,7 @@ export function pieDataFromControls(controlValues) {
       explode: controlValues[`explode${i}`],
       height: +controlValues[`height${i}`],
       offset: +controlValues[`offset${i}`],
-      customLabel: controlValues[`customLabel${i}`],
+
       labelLineColor: controlValues[`labelLineColor${i}`],
       labelLineWidth: controlValues[`labelLineWidth${i}`],
     })

@@ -17,50 +17,34 @@ const CSS2DLabels = ({
   
   // 使用 useMemo 缓存 HTML 内容，避免每次重新生成
   const htmlContent = useMemo(() => {
-    const rich = labelStyle.rich || {}
     let content = ''
     
     labelLines.forEach((line, idx) => {
-      // 解析富文本格式 {key|内容}
-      const parts = []
-      let lastIndex = 0
-      const regex = /\{(\w+)\|([^}]+)\}/g
-      let match
+      // 支持多种富文本格式：
+      // 1. HTML 标签 - 如 <b>, <i>, <span> 等
+      // 2. Markdown 风格 - 如 **粗体**, *斜体*, `代码`
+      // 3. 普通文本
       
-      while ((match = regex.exec(line)) !== null) {
-        if (match.index > lastIndex) {
-          parts.push({ text: line.slice(lastIndex, match.index), style: {} })
-        }
-        const key = match[1]
-        const text = match[2]
-        parts.push({ text, style: rich[key] || {} })
-        lastIndex = regex.lastIndex
-      }
+      let processedText = line
       
-      if (lastIndex < line.length) {
-        parts.push({ text: line.slice(lastIndex), style: {} })
-      }
+      // 处理 Markdown 风格的粗体 **text**
+      processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      
+      // 处理 Markdown 风格的斜体 *text*
+      processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>')
+      
+      // 处理 Markdown 风格的代码 `text`
+      processedText = processedText.replace(/`(.*?)`/g, '<code style="background-color: rgba(255,255,255,0.1); padding: 1px 3px; border-radius: 2px; font-family: monospace;">$1</code>')
       
       // 生成HTML
-      content += '<div class="label-line" style="margin-bottom: 2px; line-height: 1.2;">'
-      parts.forEach((part, i) => {
-        const style = part.style
-        const baseColor = style.color || labelStyle.color || 'white'
-        const baseFontSize = style.fontSize || labelStyle.fontSize || '14px'
-        const fontWeight = style.fontFamily === 'bold' ? 'bold' : 'normal'
-        const textShadow = style.outlineWidth ? 
-          `${style.outlineWidth} ${style.outlineWidth} ${style.outlineColor || 'black'}` : 
-          '2px 2px 4px rgba(0,0,0,0.8)'
-        
-        content += `<span style="
-          color: ${baseColor}; 
-          font-size: ${baseFontSize}; 
-          font-weight: ${fontWeight}; 
+      content += `<div class="label-line" style="margin-bottom: 2px; line-height: 1.2;">
+        <span style="
+          color: ${labelStyle.color || 'white'}; 
+          font-size: ${labelStyle.fontSize || '14px'}; 
           margin-right: 4px; 
-          text-shadow: ${textShadow};
-        ">${part.text}</span>`
-      })
-      content += '</div>'
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        ">${processedText}</span>
+      </div>`
     })
     
     return content

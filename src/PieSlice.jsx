@@ -187,28 +187,24 @@ const PieSlice = ({
     }
   }, [datum.labelLineStyle, datum.labelLineColor, datum.labelLineWidth, color])
 
-  // ECharts 风格 labelStyle 支持 - 使用 useMemo 缓存
+  // 标签样式配置 - 使用 useMemo 缓存
   const labelStyle = useMemo(() => {
     const baseLabelStyle = datum.labelStyle || {}
     return {
       ...baseLabelStyle,
-      rich: baseLabelStyle.rich || {},
       color: baseLabelStyle.color || color,
       fontFamily: baseLabelStyle.fontFamily,
       fontSize: baseLabelStyle.fontSize
     }
   }, [datum.labelStyle, color])
 
-  // label 多行内容，优先用 customLabel - 使用 useMemo 缓存
+  // label 多行内容 - 使用 useMemo 缓存
   const labelLines = useMemo(() => {
-    if (datum.customLabel && Array.isArray(datum.customLabel) && datum.customLabel.length > 0) {
-      return datum.customLabel
-    }
     return [
       label,
       arc.value.toFixed(4)
     ]
-  }, [datum.customLabel, label, arc.value])
+  }, [label, arc.value])
 
   // 共享的定位计算函数 - 确保 LabelLine 和 DynamicLabel 使用相同逻辑
   const calculateAdjustedPosition = useCallback((camera) => {
