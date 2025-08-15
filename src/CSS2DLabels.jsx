@@ -9,7 +9,8 @@ const CSS2DLabels = ({
   position, 
   isLeft, 
   labelStyle = {}, 
-  onPositionChange 
+  onPositionChange,
+  labelOffset = 0  // 新增：标签与折线端点的距离，默认0
 }) => {
   const ref = useRef()
   const { scene } = useThree()
@@ -89,7 +90,9 @@ const CSS2DLabels = ({
     const labelObject = new CSS2DObject(labelDiv)
     
     // 设置标签位置偏移
-    const offsetX = isLeft ? -0.5 : 0.5
+    // 根据labelOffset和isLeft计算偏移方向
+    const baseOffset = labelOffset || 0
+    const offsetX = isLeft ? -baseOffset : baseOffset
     labelObject.position.set(offsetX, 0, 0)
     
     // 添加到3D场景

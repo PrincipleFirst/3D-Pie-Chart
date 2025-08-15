@@ -3,12 +3,12 @@ import {
   config as springConfigs,
   useSpring,
 } from '@react-spring/three'
-import { Text } from '@react-three/drei'
-import { format } from 'd3-format'
+
+
 import React, { useMemo, useCallback, useLayoutEffect, useState, useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import Billboard from './Billboard'
+
 import { palette } from './theme'
 import CSS2DLabels from './CSS2DLabels'
 
@@ -39,8 +39,13 @@ const DynamicLabelLine = ({
     // 每帧计算新的位置
     const newEnd = calculateAdjustedPosition(camera)
     
-    // 直接更新本地状态，避免频繁的回调调用
+    // 更新本地状态用于线条显示
     setCurrentEnd(newEnd)
+    
+    // 同时通知父组件更新标签位置，确保同步
+    if (onPositionChange) {
+      onPositionChange(newEnd)
+    }
   })
   
   // 初始渲染时使用传入的end位置
@@ -71,13 +76,11 @@ const PieSlice = ({
   totalValue,
   height,
   onClick,
-  valueLabelPosition = 0.5,
+
   offset = 0,
   roughness = 0.2,
   metalness = 0,
-  formatter = format('.0%'),
-  showValue = true,
-  valueAsPercent = true,
+
 }) => {
   const arc = arcs[i]
   const label = datum.label
@@ -97,14 +100,8 @@ const PieSlice = ({
 
   const innerRadius = arcGenerator.innerRadius()(arc)
   const outerRadius = arcGenerator.outerRadius()(arc)
-  const labelPosition =
-    (valueLabelPosition * (outerRadius - innerRadius) + innerRadius) * 0.01
-  let xText = Math.cos(theta) * labelPosition
-  let zText = Math.sin(theta) * labelPosition
-  const yTextOffset = 0.125
-  // glorious idea for laziness
-  // const percent = (arc.endAngle - arc.startAngle) / (Math.PI * 2)
-  const percent = arc.value / totalValue
+
+
 
   const springProps = useSpring({
     // xOffset,
@@ -126,6 +123,9 @@ const PieSlice = ({
     const r = outerRadius * SCALE
     const offset1 = (labelLineStyle.length !== undefined ? labelLineStyle.length * SCALE : 0.15 * outerRadius * SCALE)
     const offset2 = (labelLineStyle.length2 !== undefined ? labelLineStyle.length2 * SCALE : 0.3 * outerRadius * SCALE)
+    
+    // 支持自定义标签偏移距离
+    const labelOffset = labelLineStyle.labelOffset !== undefined ? labelLineStyle.labelOffset * SCALE : 0
 
     const start = [Math.cos(theta) * r, 0, Math.sin(theta) * r]
     const mid = [Math.cos(theta) * (r + offset1), 0, Math.sin(theta) * (r + offset1)]
@@ -172,11 +172,11 @@ const PieSlice = ({
     // 标签位置将根据摄像机动态调整，这里先设置一个初始位置
     const labelPos = [endX, 0, mid[2]]
     
-    return { start, mid, end, finalIsLeft, labelPos }
+    return { start, mid, end, finalIsLeft, labelPos, labelOffset }
   }, [datum.labelLineStyle, outerRadius, theta])
   
   // 解构计算结果
-  const { start, mid, end, finalIsLeft, labelPos } = labelLineData
+  const { start, mid, end, finalIsLeft, labelPos, labelOffset } = labelLineData
 
   // labelLine 样式 - 使用 useMemo 缓存
   const lineStyle = useMemo(() => {
@@ -206,10 +206,9 @@ const PieSlice = ({
     }
     return [
       label,
-      arc.value.toFixed(4),
-      (percent * 100).toFixed(2) + '%'
+      arc.value.toFixed(4)
     ]
-  }, [datum.customLabel, label, arc.value, percent])
+  }, [datum.customLabel, label, arc.value])
 
   // 共享的定位计算函数 - 确保 LabelLine 和 DynamicLabel 使用相同逻辑
   const calculateAdjustedPosition = useCallback((camera) => {
@@ -259,6 +258,11 @@ const PieSlice = ({
   useEffect(() => {
     setDynamicEndPosition(end)
   }, [end])
+  
+  // 优化位置更新，减少不必要的重新渲染
+  const handlePositionChange = useCallback((newPosition) => {
+    setDynamicEndPosition(newPosition)
+  }, [])
 
   return (
     <animated.group key={i} position={springProps.position}>
@@ -278,29 +282,7 @@ const PieSlice = ({
           metalness={metalness}
         />
       </animated.mesh>
-      {showValue && (
-        <Billboard>
-          <Text
-            position={[xText, yTextOffset, zText]}
-            castShadow
-            fontSize={0.2}
-            maxWidth={200}
-            lineHeight={1}
-            letterSpacing={0.02}
-            textAlign={'left'}
-            font="https://fonts.gstatic.com/s/raleway/v14/1Ptrg8zYS_SKggPNwK4vaqI.woff"
-            anchorX="center"
-            anchorY="middle"
-            fillOpacity={1}
-            color="white"
-            outlineWidth={'2.5%'}
-            outlineColor="#000000"
-            outlineOpacity={0.2}
-          >
-            {valueAsPercent ? formatter(percent) : arc.value}
-          </Text>
-        </Billboard>
-      )}
+
       
       {/* CSS2D标签，位置与labelLine同步 */}
       <CSS2DLabels 
@@ -308,6 +290,7 @@ const PieSlice = ({
         position={dynamicEndPosition}
         isLeft={finalIsLeft}
         labelStyle={labelStyle}
+        labelOffset={labelOffset}
       />
       
       {/* labelLine 折线 - 使用动态计算的位置 */}
@@ -318,7 +301,7 @@ const PieSlice = ({
         color={lineStyle.color}
         width={lineStyle.width}
         calculateAdjustedPosition={calculateAdjustedPosition}
-        onPositionChange={setDynamicEndPosition} // 传递回调函数，更新CSS2D标签位置
+        onPositionChange={handlePositionChange} // 使用优化的回调函数
       />
     </animated.group>
   )
