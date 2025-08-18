@@ -73,10 +73,8 @@ const PieSlice = ({
   datum,
   arcGenerator,
   extrudeSettings,
-  totalValue,
   height,
   onClick,
-
   offset = 0,
   roughness = 0.2,
   metalness = 0,
@@ -201,10 +199,10 @@ const PieSlice = ({
   // label 多行内容 - 使用 useMemo 缓存
   const labelLines = useMemo(() => {
     return [
-      label,
-      arc.value.toFixed(4)
+      label
+      // 移除数值显示，只显示HTML标签
     ]
-  }, [label, arc.value])
+  }, [label])
 
   // 共享的定位计算函数 - 确保 LabelLine 和 DynamicLabel 使用相同逻辑
   const calculateAdjustedPosition = useCallback((camera) => {

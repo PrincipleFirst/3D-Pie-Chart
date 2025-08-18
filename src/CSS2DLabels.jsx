@@ -19,35 +19,15 @@ const CSS2DLabels = ({
     let content = ''
     
     labelLines.forEach((line, idx) => {
-      // 支持多种富文本格式：
-      // 1. HTML 标签 - 如 <b>, <i>, <span> 等
-      // 2. Markdown 风格 - 如 **粗体**, *斜体*, `代码`
-      // 3. 普通文本
-      
-      let processedText = line
-      
-      // 处理 Markdown 风格的粗体 **text**
-      processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      
-      // 处理 Markdown 风格的斜体 *text*
-      processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>')
-      
-      // 处理 Markdown 风格的代码 `text`
-      processedText = processedText.replace(/`(.*?)`/g, '<code style="background-color: rgba(255,255,255,0.1); padding: 1px 3px; border-radius: 2px; font-family: monospace;">$1</code>')
-      
-      // 生成HTML
-      content += `<div class="label-line" style="margin-bottom: 2px; line-height: 1.2;">
-        <span style="
-          color: ${labelStyle.color || 'white'}; 
-          font-size: ${labelStyle.fontSize || '14px'}; 
-          margin-right: 4px; 
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        ">${processedText}</span>
+      // 生成HTML，支持传入的style
+      const inlineStyle = labelStyle.style ? ` style="${labelStyle.style}"` : ''
+      content += `<div class="label-line">
+        <span class="label-text"${inlineStyle}>${line}</span>
       </div>`
     })
     
     return content
-  }, [labelLines, labelStyle])
+  }, [labelLines, labelStyle.style])
   
   // 使用 useMemo 缓存样式字符串，避免每次重新计算
   const labelStyles = useMemo(() => `
@@ -57,6 +37,15 @@ const CSS2DLabels = ({
     color: white;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     ${isLeft ? 'text-align: right;' : 'text-align: left;'}
+    
+    /* 使用flex布局控制行间距 */
+    .label-line {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: ${isLeft ? 'flex-end' : 'flex-start'};
+    }
+    
   `, [isLeft])
   
   // 创建CSS2D元素
