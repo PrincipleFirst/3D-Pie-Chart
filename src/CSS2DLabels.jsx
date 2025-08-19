@@ -9,7 +9,9 @@ const CSS2DLabels = ({
   position, 
   isLeft, 
   labelStyle = {}, 
-  onPositionChange
+  onPositionChange,
+  className = '',
+  style = {}
 }) => {
   const ref = useRef()
   const { scene } = useThree()
@@ -24,19 +26,13 @@ const CSS2DLabels = ({
     hasLabelRenderer: !!scene.userData.labelRenderer
   })
   
-  // 检查必要的数据
-  if (!labelLines || labelLines.length === 0) {
-    console.warn('CSS2DLabels: No labelLines provided')
-    return null
-  }
-  
-  if (!position || !Array.isArray(position)) {
-    console.warn('CSS2DLabels: Invalid position provided:', position)
-    return null
-  }
+  // 校验标记（避免在 Hooks 之前 return）
+  const hasValidLabelLines = Array.isArray(labelLines) && labelLines.length > 0
+  const hasValidPosition = Array.isArray(position)
   
   // 使用 useMemo 缓存 HTML 内容，避免每次重新生成
   const htmlContent = useMemo(() => {
+    if (!hasValidLabelLines) return ''
     let content = ''
     
     console.log('Building HTML content from labelLines:', labelLines)
@@ -58,33 +54,46 @@ const CSS2DLabels = ({
     
     console.log('Final HTML content:', content)
     return content
-  }, [labelLines, labelStyle.style])
+  }, [hasValidLabelLines, labelLines, labelStyle.style])
   
   // 使用 useMemo 缓存样式字符串，避免每次重新计算
-  const labelStyles = useMemo(() => `
-    pointer-events: none;
-    white-space: nowrap;
-    font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    background: rgba(0,0,0,0.7);
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid white;
-    ${isLeft ? 'text-align: right;' : 'text-align: left;'}
+  const labelStyles = useMemo(() => {
+    // 默认样式：无边框无背景色，宽度自适应
+    const defaultStyles = `
+      pointer-events: none;
+      white-space: nowrap;
+      font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      ${isLeft ? 'text-align: right;' : 'text-align: left;'}
+      
+      /* 使用flex布局控制行间距 */
+      .label-line {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: ${isLeft ? 'flex-end' : 'flex-start'};
+      }
+    `
     
-    /* 使用flex布局控制行间距 */
-    .label-line {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: ${isLeft ? 'flex-end' : 'flex-start'};
+    // 动态合并用户自定义样式 - 支持任意CSS属性
+    let customStyles = ''
+    if (style && typeof style === 'object') {
+      Object.entries(style).forEach(([property, value]) => {
+        if (value !== undefined && value !== null) {
+          // 将驼峰命名转换为短横线命名 (如: backgroundColor -> background-color)
+          const cssProperty = property.replace(/([A-Z])/g, '-$1').toLowerCase()
+          customStyles += `${cssProperty}: ${value};`
+        }
+      })
     }
     
-  `, [isLeft])
+    return defaultStyles + customStyles
+  }, [isLeft, style])
   
   // 创建CSS2D元素
   useEffect(() => {
+    if (!hasValidLabelLines) return
     console.log('CSS2DLabels useEffect triggered:', {
       ref: !!ref.current,
       sceneUserData: scene.userData,
@@ -104,13 +113,11 @@ const CSS2DLabels = ({
     try {
       // 创建标签容器
       const labelDiv = document.createElement('div')
-      labelDiv.className = 'css2d-label'
+      labelDiv.className = `css2d-label ${className}`.trim()
       labelDiv.style.cssText = labelStyles
       labelDiv.innerHTML = htmlContent
       
-      // 添加一些调试样式，确保标签可见
-      labelDiv.style.minWidth = '200px'
-      labelDiv.style.minHeight = '50px'
+      // 设置z-index确保标签在最上层
       labelDiv.style.zIndex = '1000'
       
       console.log('Created label div:', labelDiv)
@@ -137,7 +144,7 @@ const CSS2DLabels = ({
     } catch (error) {
       console.error('Error creating CSS2D label:', error)
     }
-  }, [htmlContent, labelStyles, scene.userData.labelRenderer])
+  }, [hasValidLabelLines, htmlContent, labelStyles, scene.userData.labelRenderer])
   
   // 监听位置变化，更新标签位置
   useEffect(() => {
@@ -149,6 +156,16 @@ const CSS2DLabels = ({
     onPositionChange([worldPosition.x, worldPosition.y, worldPosition.z])
   }, [position, onPositionChange])
   
+  // 在所有 Hooks 之后再进行条件返回
+  if (!hasValidLabelLines) {
+    console.warn('CSS2DLabels: No labelLines provided')
+    return null
+  }
+  if (!hasValidPosition) {
+    console.warn('CSS2DLabels: Invalid position provided:', position)
+    return null
+  }
+
   return (
     <group ref={ref} position={position}>
       {/* 空的mesh，用于定位 */}

@@ -353,6 +353,8 @@ const PieSlice = ({
         position={labelPosition}  // 使用计算好的标签最终位置
         isLeft={finalIsLeft}
         labelStyle={labelStyle}
+        className={datum.labelClassName || ''}
+        style={datum.labelContainerStyle || {}}
         // 不再需要 labelOffset，因为位置已经计算好了
       />
       

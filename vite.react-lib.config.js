@@ -17,7 +17,14 @@ export default defineConfig({
       // 不外部化依赖，全部打包进去
       external: [],
       output: {
-        globals: {}
+        globals: {},
+        // 固定 CSS 资产文件名，确保稳定路径
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return '3dpie-react.css'
+          }
+          return assetInfo.name || '[name][extname]'
+        }
       }
     },
 

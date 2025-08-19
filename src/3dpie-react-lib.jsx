@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import ThreeDPieChartLib from './App-lib'
+import './3dpie-react-lib.css'
 
 // 全局图表实例管理
 const chartInstances = new Map()
