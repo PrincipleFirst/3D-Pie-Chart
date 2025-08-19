@@ -10,22 +10,37 @@ const CSS2DRendererProvider = ({ children }) => {
   // 使用 useCallback 缓存事件处理函数
   const handleResize = useCallback(() => {
     if (labelRendererRef.current) {
-      labelRendererRef.current.setSize(window.innerWidth, window.innerHeight)
+      const container = gl.domElement.parentElement
+      if (container) {
+        const rect = container.getBoundingClientRect()
+        labelRendererRef.current.setSize(rect.width, rect.height)
+      }
     }
-  }, [])
+  }, [gl])
   
   useEffect(() => {
     if (!labelRendererRef.current) {
       // 创建 CSS2DRenderer
       const labelRenderer = new CSS2DRenderer()
-      labelRenderer.setSize(window.innerWidth, window.innerHeight)
+      
+      // 获取容器尺寸
+      const container = gl.domElement.parentElement
+      if (container) {
+        const rect = container.getBoundingClientRect()
+        labelRenderer.setSize(rect.width, rect.height)
+      }
+      
       labelRenderer.domElement.style.position = 'absolute'
       labelRenderer.domElement.style.top = '0px'
+      labelRenderer.domElement.style.left = '0px'
       labelRenderer.domElement.style.pointerEvents = 'none'
       labelRenderer.domElement.style.zIndex = '1000'
       
-      // 添加到 DOM
-      document.body.appendChild(labelRenderer.domElement)
+      // 添加到容器而不是body
+      if (container) {
+        container.appendChild(labelRenderer.domElement)
+      }
+      
       labelRendererRef.current = labelRenderer
       
       // 存储到 three.js 场景中，供其他组件使用
@@ -41,7 +56,7 @@ const CSS2DRendererProvider = ({ children }) => {
         labelRendererRef.current.domElement.parentNode.removeChild(labelRendererRef.current.domElement)
       }
     }
-  }, [scene, handleResize])
+  }, [scene, gl, handleResize])
   
   // 渲染标签
   useFrame(() => {

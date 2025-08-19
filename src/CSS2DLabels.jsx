@@ -14,18 +14,49 @@ const CSS2DLabels = ({
   const ref = useRef()
   const { scene } = useThree()
   
+  // 添加详细的调试信息
+  console.log('CSS2DLabels render:', { 
+    labelLines, 
+    position, 
+    isLeft, 
+    labelStyle,
+    sceneUserData: scene.userData,
+    hasLabelRenderer: !!scene.userData.labelRenderer
+  })
+  
+  // 检查必要的数据
+  if (!labelLines || labelLines.length === 0) {
+    console.warn('CSS2DLabels: No labelLines provided')
+    return null
+  }
+  
+  if (!position || !Array.isArray(position)) {
+    console.warn('CSS2DLabels: Invalid position provided:', position)
+    return null
+  }
+  
   // 使用 useMemo 缓存 HTML 内容，避免每次重新生成
   const htmlContent = useMemo(() => {
     let content = ''
     
+    console.log('Building HTML content from labelLines:', labelLines)
+    
     labelLines.forEach((line, idx) => {
-      // 生成HTML，支持传入的style
-      const inlineStyle = labelStyle.style ? ` style="${labelStyle.style}"` : ''
-      content += `<div class="label-line">
-        <span class="label-text"${inlineStyle}>${line}</span>
-      </div>`
+      // 如果 line 是 HTML 字符串，直接使用
+      if (typeof line === 'string' && line.includes('<')) {
+        console.log('Using HTML line:', line)
+        content += line
+      } else {
+        // 否则生成普通的 span 标签
+        console.log('Using text line:', line)
+        const inlineStyle = labelStyle.style ? ` style="${labelStyle.style}"` : ''
+        content += `<div class="label-line">
+          <span class="label-text"${inlineStyle}>${line}</span>
+        </div>`
+      }
     })
     
+    console.log('Final HTML content:', content)
     return content
   }, [labelLines, labelStyle.style])
   
@@ -36,6 +67,10 @@ const CSS2DLabels = ({
     font-family: 'Alibaba PuHuiTi 2.0', sans-serif;
     color: white;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.7);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid white;
     ${isLeft ? 'text-align: right;' : 'text-align: left;'}
     
     /* 使用flex布局控制行间距 */
@@ -50,29 +85,57 @@ const CSS2DLabels = ({
   
   // 创建CSS2D元素
   useEffect(() => {
-    if (!ref.current || !scene.userData.labelRenderer) return
+    console.log('CSS2DLabels useEffect triggered:', {
+      ref: !!ref.current,
+      sceneUserData: scene.userData,
+      labelRenderer: scene.userData.labelRenderer
+    })
     
-    // 创建标签容器
-    const labelDiv = document.createElement('div')
-    labelDiv.className = 'css2d-label'
-    labelDiv.style.cssText = labelStyles
-    labelDiv.innerHTML = htmlContent
+    if (!ref.current) {
+      console.warn('CSS2DLabels: ref.current is null')
+      return
+    }
     
-    // 创建CSS2DObject
-    const labelObject = new CSS2DObject(labelDiv)
+    if (!scene.userData.labelRenderer) {
+      console.warn('CSS2DLabels: scene.userData.labelRenderer is not available')
+      return
+    }
     
-    // 标签位置已经在父组件中计算好了，直接设置为(0,0,0)
-    // 因为position prop已经包含了所有偏移
-    labelObject.position.set(0, 0, 0)
-    
-    // 添加到3D场景
-    ref.current.add(labelObject)
-    ref.current.labelObject = labelObject
-    
-    return () => {
-      if (labelObject && ref.current) {
-        ref.current.remove(labelObject)
+    try {
+      // 创建标签容器
+      const labelDiv = document.createElement('div')
+      labelDiv.className = 'css2d-label'
+      labelDiv.style.cssText = labelStyles
+      labelDiv.innerHTML = htmlContent
+      
+      // 添加一些调试样式，确保标签可见
+      labelDiv.style.minWidth = '200px'
+      labelDiv.style.minHeight = '50px'
+      labelDiv.style.zIndex = '1000'
+      
+      console.log('Created label div:', labelDiv)
+      
+      // 创建CSS2DObject
+      const labelObject = new CSS2DObject(labelDiv)
+      
+      // 标签位置已经在父组件中计算好了，直接设置为(0,0,0)
+      // 因为position prop已经包含了所有偏移
+      labelObject.position.set(0, 0, 0)
+      
+      // 添加到3D场景
+      ref.current.add(labelObject)
+      ref.current.labelObject = labelObject
+      
+      console.log('Successfully added label to scene:', labelObject)
+      
+      return () => {
+        if (labelObject && ref.current) {
+          ref.current.remove(labelObject)
+          console.log('Removed label from scene')
+        }
       }
+    } catch (error) {
+      console.error('Error creating CSS2D label:', error)
     }
   }, [htmlContent, labelStyles, scene.userData.labelRenderer])
   

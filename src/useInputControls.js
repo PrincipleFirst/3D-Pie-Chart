@@ -2,14 +2,17 @@ import { extent, max, maxIndex, min } from 'd3-array'
 import { button, buttonGroup, folder, useControls, LevaInputs } from 'leva'
 import React from 'react'
 import { palette } from './theme'
+import { isProduction } from './config'
+import { isFeatureEnabled } from './env'
 
 // lazy global state to track whether we did the first initialization of controls
 // otherwise, we set everything in the URL immediately.
 let initialized = false
 
+// 生产环境下关闭 URL 同步功能
 function writeChangesToUrl(key) {
   return (value) => {
-    if (!initialized) return
+    if (!initialized || !isFeatureEnabled('urlSync')) return
     const params = new URLSearchParams(window.location.search)
     params.set(
       key,
@@ -37,6 +40,15 @@ function parseValue(value, type) {
 
 /** adds URL write support to a param */
 function createUrlSync() {
+  // 生产环境下不创建 URL 同步
+  if (!isFeatureEnabled('urlSync')) {
+    return (key, defaultValue, type) => ({
+      value: defaultValue,
+      onChange: () => {}, // 空函数，不执行任何操作
+      transient: false,
+    })
+  }
+  
   const initialParams = new URLSearchParams(window.location.search)
   return (key, defaultValue, type) => ({
     value: parseValue(initialParams.get(key), type) ?? defaultValue,
@@ -123,7 +135,9 @@ const useInputControls = () => {
     valuesAsPercent,
   } = useControls({
     reset: button(() => {
-      window.location.href = '/'
+      if (isFeatureEnabled('debugMode')) {
+        window.location.href = '/'
+      }
     }),
     customize: folder(
       {
@@ -480,11 +494,13 @@ const useInputControls = () => {
     controlValuesRef.current = [controlValues, set]
   }, [controlValues, set])
 
-  // lazy global initialization flag
+  // lazy global initialization flag - 生产环境下不初始化
   React.useEffect(() => {
-    initialized = true
-    return () => {
-      initialized = false
+    if (isFeatureEnabled('urlSync')) {
+      initialized = true
+      return () => {
+        initialized = false
+      }
     }
   }, [])
 

@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "serve": "vite preview"
+    "build:prod": "node build-prod.js",
+    "build:lib": "vite build --config vite.lib.config.js",
+    "build:react-lib": "vite build --config vite.react-lib.config.js",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "homepage": "http://3dpie.peterbeshai.com/",
   "repository": {
@@ -49,6 +53,7 @@
     "eslint-plugin-jsx-a11y": "^6.3.1",
     "eslint-plugin-react": "^7.20.3",
     "eslint-plugin-react-hooks": "^4.0.8",
+    "terser": "^5.43.1",
     "vite": "^5.0.0"
   }
 }
