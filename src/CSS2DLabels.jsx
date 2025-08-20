@@ -144,7 +144,7 @@ const CSS2DLabels = ({
     } catch (error) {
       console.error('Error creating CSS2D label:', error)
     }
-  }, [hasValidLabelLines, htmlContent, labelStyles, scene.userData.labelRenderer])
+  }, [className, hasValidLabelLines, htmlContent, labelStyles, scene.userData, scene.userData.labelRenderer])
   
   // 监听位置变化，更新标签位置
   useEffect(() => {

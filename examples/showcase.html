@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Pie Chart 展示页面</title>
+
+  <!-- 引入库文件 -->
+  <link rel="stylesheet" href="../dist-react-lib/3dpie-react.css">
+  <script src="../dist-react-lib/3dpie-react.umd.js"></script>
+
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+
+      body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          padding: 20px;
+      }
+
+      .header {
+          text-align: center;
+          color: white;
+          margin-bottom: 40px;
+      }
+
+      .header h1 {
+          font-size: 3rem;
+          margin-bottom: 10px;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+          font-size: 1.2rem;
+          opacity: 0.9;
+      }
+
+      .showcase-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+          gap: 30px;
+          max-width: 1400px;
+          margin: 0 auto;
+      }
+
+      .chart-card {
+          background: white;
+          border-radius: 15px;
+          padding: 25px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .chart-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .chart-title {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #333;
+          margin-bottom: 15px;
+          text-align: center;
+      }
+
+      .chart-description {
+          color: #666;
+          margin-bottom: 20px;
+          text-align: center;
+          line-height: 1.5;
+      }
+
+      .chart-container {
+          width: 100%;
+          height: 400px;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 2px solid #f0f0f0;
+      }
+
+      .controls {
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          flex-wrap: wrap;
+      }
+
+      .btn {
+          background: linear-gradient(45deg, #667eea, #764ba2);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 25px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn.secondary {
+          background: linear-gradient(45deg, #f093fb, #f5576c);
+      }
+
+      .btn.secondary:hover {
+          box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+      }
+
+      .btn.success {
+          background: linear-gradient(45deg, #4facfe, #00f2fe);
+      }
+
+      .btn.success:hover {
+          box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+      }
+
+      .status-bar {
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 10px;
+          margin-top: 20px;
+          border-left: 4px solid #667eea;
+      }
+
+      .status-text {
+          color: #333;
+          font-weight: 500;
+      }
+
+      .footer {
+          text-align: center;
+          margin-top: 50px;
+          color: white;
+          opacity: 0.8;
+      }
+
+      @media (max-width: 768px) {
+          .showcase-grid {
+              grid-template-columns: 1fr;
+              gap: 20px;
+          }
+
+          .header h1 {
+              font-size: 2rem;
+          }
+
+          .chart-container {
+              height: 300px;
+          }
+      }
+
+      /* 富文本标签动画 */
+      @keyframes glow {
+          from {
+              text-shadow: 0 0 10px currentColor;
+          }
+          to {
+              text-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+          }
+      }
+
+      /* 脉冲动画 */
+      @keyframes pulse {
+          0% {
+              transform: scale(1);
+          }
+          50% {
+              transform: scale(1.05);
+          }
+          100% {
+              transform: scale(1);
+          }
+      }
+
+      /* 标签线样式 */
+      .three-d-pie-label-line {
+          stroke-width: 2;
+          stroke-linecap: round;
+      }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>🎯 3D Pie Chart 展示</h1>
+  <p>基于 React 的 3D 饼图库，支持富文本标签、交互控制、主题切换等功能<br>
+  <strong>🎯 innerRadius 配置演示：</strong> 展示不同内径值的环形图效果</p>
+</div>
+
+<div class="showcase-grid">
+  <!-- 简单销售数据 -->
+  <div class="chart-card">
+    <div class="chart-title">📊 小环形图 (innerRadius: 2)</div>
+    <div class="chart-description">细环形图，保持饼图视觉特征，增加现代感</div>
+    <div class="chart-container" id="chart1"></div>
+          <div class="controls">
+        <button class="btn" onclick="updateChart1()">更新数据</button>
+        <button class="btn secondary" onclick="toggleTheme1()">切换主题</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart1', 5)">增大内径</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart1', 2)">恢复默认</button>
+        <button class="btn secondary" onclick="resetCamera('chart1')">重置相机</button>
+        <button class="btn secondary" onclick="toggleAutoRotate('chart1')">切换旋转</button>
+      </div>
+    <div class="status-bar">
+      <div class="status-text">状态：✅ 图表已加载</div>
+    </div>
+  </div>
+
+  <!-- 产品分类 -->
+  <div class="chart-card">
+    <div class="chart-title">🏷️ 中等环形图 (innerRadius: 15)</div>
+    <div class="chart-description">中等宽度环形图，平衡视觉效果和可读性</div>
+    <div class="chart-container" id="chart2"></div>
+          <div class="controls">
+        <button class="btn" onclick="updateChart2()">随机数据</button>
+        <button class="btn success" onclick="animateChart2()">动画效果</button>
+        <button class="btn secondary" onclick="adjustInnerRadius('chart2', 25)">增大内径</button>
+        <button class="btn secondary" onclick="adjustInnerRadius('chart2', 15)">恢复默认</button>
+        <button class="btn secondary" onclick="resetCamera('chart2')">重置相机</button>
+        <button class="btn secondary" onclick="toggleAutoRotate('chart2')">切换旋转</button>
+      </div>
+    <div class="status-bar">
+      <div class="status-text">状态：✅ 图表已加载</div>
+    </div>
+  </div>
+
+  <!-- 复杂富文本标签 -->
+  <div class="chart-card">
+    <div class="chart-title">✨ 宽环形图</div>
+    <div class="chart-description">宽环形图，突出环形结构，适合装饰性展示</div>
+    <div class="chart-container" id="chart3"></div>
+          <div class="controls">
+        <button class="btn" onclick="updateChart3()">切换标签</button>
+        <button class="btn secondary" onclick="toggleEffects3()">特效开关</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart3', 45)">增大内径</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart3', 35)">恢复默认</button>
+        <button class="btn secondary" onclick="resetCamera('chart3')">重置相机</button>
+        <button class="btn secondary" onclick="toggleAutoRotate('chart3')">切换旋转</button>
+      </div>
+    <div class="status-bar">
+      <div class="status-text">状态：✅ 图表已加载</div>
+    </div>
+  </div>
+
+  <!-- 动态数据 -->
+  <div class="chart-card">
+    <div class="chart-title">🔄 实心饼图 (innerRadius: 0)</div>
+    <div class="chart-description">传统实心饼图，无内径，适合展示整体数据分布</div>
+    <div class="chart-container" id="chart4"></div>
+          <div class="controls">
+        <button class="btn" onclick="startAutoUpdate()">开始自动更新</button>
+        <button class="btn secondary" onclick="stopAutoUpdate()">停止更新</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart4', 10)">添加内径</button>
+        <button class="btn success" onclick="adjustInnerRadius('chart4', 0)">恢复实心</button>
+        <button class="btn secondary" onclick="resetCamera('chart4')">重置相机</button>
+        <button class="btn secondary" onclick="toggleAutoRotate('chart4')">切换旋转</button>
+      </div>
+    <div class="status-bar">
+      <div class="status-text">状态：✅ 图表已加载</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>基于 React + Three.js 构建 | 支持富文本标签、3D效果、交互控制</p>
+</div>
+
+<script>
+  let charts = {}
+  let autoUpdateInterval = null
+
+  // 页面加载完成后初始化所有图表
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+      initAllCharts()
+    }, 200)
+  })
+
+  // 初始化所有图表
+  function initAllCharts() {
+    try {
+      // 图表1：简单销售数据
+      charts.chart1 = init3DPieChart('chart1', {
+        data: [
+          { value: 2.5, color: '#ff6b6b', label: '🔥 热销产品', height: 0.8, offset: 0 },
+          { value: 1.8, color: '#45b7d1', label: '🚀 旗舰产品', height: 0.7, offset: 0 },
+          { value: 1.2, color: '#ffd700', label: '⭐ 明星产品', height: 0.6, offset: 0 },
+          { value: 0.8, color: '#ff9ff3', label: '💎 精品产品', height: 0.5, offset: 0 },
+        ],
+        layout: {
+          title: '销售数据分布',
+          innerRadius: 2,        // 小环形图
+          outerRadius: 100,
+        },
+        style: {
+          backgroundColor: '#1f2937',
+        },
+        camera: {
+          position: [3, 2, 6],
+          fov: 45,
+          minPolarAngle: 0.3,
+          maxPolarAngle: Math.PI - 0.3,
+          minDistance: 3,
+          maxDistance: 15,
+          enableDamping: true,
+          dampingFactor: 0.1,
+        },
+      })
+
+      // 图表2：产品分类
+      charts.chart2 = init3DPieChart('chart2', {
+        data: [
+          { value: 3.0, color: '#4facfe', label: '📱 移动设备', height: 0.9, offset: 0 },
+          { value: 2.2, color: '#43e97b', label: '💻 电脑设备', height: 0.8, offset: 0 },
+          { value: 1.5, color: '#fa709a', label: '🎮 游戏设备', height: 0.7, offset: 0 },
+          { value: 1.0, color: '#fee140', label: '📺 影音设备', height: 0.6, offset: 0 },
+          { value: 0.6, color: '#a8edea', label: '🏠 智能家居', height: 0.5, offset: 0 },
+        ],
+        layout: {
+          title: '产品分类统计',
+          innerRadius: 15,       // 中等环形图
+          outerRadius: 110,
+        },
+        style: {
+          backgroundColor: '#2d3748',
+        },
+        camera: {
+          position: [3, 2, 6],
+          fov: 45,
+          minPolarAngle: 0.3,
+          maxPolarAngle: Math.PI - 0.3,
+          minDistance: 3,
+          maxDistance: 15,
+          enableDamping: true,
+          dampingFactor: 0.1,
+        },
+      })
+
+      // 图表3：复杂富文本标签（展示灵活的样式配置）
+      charts.chart3 = init3DPieChart('chart3', {
+        data: [
+          {
+            value: 1.5,
+            color: '#ff6b6b',
+            label: '<div style=\'text-align: center; transform: rotate(-2deg);\'><div style=\'color: #ff6b6b; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 10px #ff6b6b; animation: glow 2s ease-in-out infinite alternate; margin-bottom: 12px;\'>🔥 产品A 热销版 🔥</div><div style=\'color: #4ecdc4; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'background: linear-gradient(45deg, #4ecdc4, #44a08d); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>✨ 全新升级 ✨</span></div><div style=\'color: #feca57; font-size: 0.8em; font-style: italic;\'><span style=\'border: 1px solid #feca57; padding: 1px 4px; border-radius: 3px; background: rgba(254, 202, 87, 0.1);\'>限时特价 8.8折</span></div></div>',
+            explode: false,
+            height: 0.5,
+            offset: 0,
+            labelLineColor: '#ff0000',
+            labelLineWidth: 1,
+            labelLineStyle: {
+              labelOffset: 30,
+            },
+            labelClassName: 'custom-label-style',
+            labelContainerStyle: {
+              background: 'rgba(0, 0, 0, 0.8)',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '2px solid rgba(255, 107, 107, 0.6)',
+              minWidth: '250px',
+              boxShadow: '0 4px 20px rgba(255, 107, 107, 0.3)',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+            },
+          },
+          {
+            value: 0.85,
+            color: '#45b7d1',
+            label: '<div style=\'text-align: center;\'><div style=\'color: #45b7d1; font-size: 1.1em; font-weight: bold; margin-bottom: 12px; animation: pulse 2s infinite;\'><span style=\'background: linear-gradient(90deg, #45b7d1, #96ceb4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>🚀 产品B 旗舰版</span></div><div style=\'color: #96ceb4; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border-left: 3px solid #96ceb4; padding-left: 8px; background: rgba(150, 206, 180, 0.1);\'>💎 钻石品质保证</span></div><div style=\'color: #feca57; font-size: 0.8em;\'><span style=\'background: linear-gradient(45deg, #feca57, #ff9ff3); padding: 2px 6px; border-radius: 4px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);\'>VIP 专属服务</span></div></div>',
+            explode: false,
+            height: 0.5,
+            offset: 0,
+            labelLineColor: '#0000ff',
+            labelLineWidth: 1,
+            labelLineStyle: {
+              labelOffset: 30,
+            },
+            labelClassName: 'premium-label-style',
+            labelContainerStyle: {
+              background: 'linear-gradient(135deg, rgba(69, 183, 209, 0.1), rgba(150, 206, 180, 0.1))',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid rgba(69, 183, 209, 0.4)',
+              minWidth: '220px',
+              backdropFilter: 'blur(10px)',
+              filter: 'hue-rotate(45deg)',
+              cursor: 'pointer',
+            },
+          },
+          {
+            value: 0.6,
+            color: '#ffd700',
+            label: '<div style=\'text-align: center;\'><div style=\'color: #ffd700; font-size: 1.1em; font-weight: bold; text-shadow: 0 0 8px #ffd700; margin-bottom: 12px;\'><span style=\'background: radial-gradient(circle, #ffd700, #ffed4e); padding: 2px 8px; border-radius: 5px; color: #333;\'>⭐ 产品C 至尊版 ⭐</span></div><div style=\'color: #ff9ff3; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border: 2px dashed #ff9ff3; padding: 1px 6px; border-radius: 3px; background: rgba(255, 159, 243, 0.1);\'>🎯 精准定位 智能推荐</span></div><div style=\'color: #54a0ff; font-size: 0.8em; font-style: italic;\'><span style=\'background: linear-gradient(135deg, #54a0ff, #5f27cd); color: white; padding: 1px 5px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);\'>AI 驱动 未来科技</span></div></div>',
+            explode: false,
+            height: 0.5,
+            offset: 0,
+            labelLineColor: '#00ff00',
+            labelLineWidth: 1,
+            labelLineStyle: {
+              labelOffset: 30,
+            },
+            labelClassName: 'luxury-label-style',
+            labelContainerStyle: {
+              background: 'radial-gradient(circle, rgba(255, 215, 0, 0.15), rgba(255, 237, 78, 0.1))',
+              padding: '15px',
+              borderRadius: '12px',
+              border: '2px dashed rgba(255, 215, 0, 0.6)',
+              minWidth: '280px',
+              boxShadow: '0 6px 25px rgba(255, 215, 0, 0.2)',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+              letterSpacing: '1px',
+              wordSpacing: '2px',
+              lineHeight: '1.6',
+            },
+          },
+          {
+            value: 0.4,
+            color: '#ff9ff3',
+            label: '<div style=\'text-align: center;\'><div style=\'color: #ff9ff3; font-size: 1.1em; font-weight: bold; margin-bottom: 12px;\'><span style=\'background: linear-gradient(45deg, #ff9ff3, #f368e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px #ff9ff3;\'>🎭 产品D 艺术版</span></div><div style=\'color: #54a0ff; font-size: 0.9em; margin: 2px 0;  margin-bottom: 22px;\'><span style=\'border: 2px solid #54a0ff; border-radius: 15px; padding: 2px 8px; background: linear-gradient(135deg, rgba(84, 160, 255, 0.2), rgba(95, 39, 205, 0.2));\'>🎨 创意无限 艺术无界</span></div><div style=\'color: #ff6b6b; font-size: 0.8em; font-style: italic;\'><span style=\'background: radial-gradient(circle, #ff6b6b, #ee5a24); color: white; padding: 1px 6px; border-radius: 4px; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);\'>🔥 限时抢购 库存紧张</span></div></div>',
+            explode: false,
+            height: 0.5,
+            offset: 0,
+          },
+          {
+            value: 0.3,
+            color: '#00d2d3',
+            label: '<div style=\'text-align: center;\'><div style=\'color: #00d2d3; font-size: 1.1em; font-weight: bold; margin-bottom: 12px;\'><span style=\'background: linear-gradient(90deg, #00d2d3, #54a0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 12px #00d2d3;\'>🌟 产品E 探索版</span></div><div style=\'color: #5f27cd; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border-left: 4px solid #5f27cd; padding-left: 10px; background: linear-gradient(90deg, rgba(95, 39, 205, 0.1), rgba(84, 160, 255, 0.1));\'>🔮 神秘功能 即将揭晓</span></div><div style=\'color: #ff9ff3; font-size: 0.8em;\'><span style=\'background: linear-gradient(135deg, #ff9ff3, #f368e0); color: white; padding: 2px 8px; border-radius: 6px; box-shadow: 0 3px 10px rgba(255, 159, 243, 0.4); text-shadow: 1px 1px 2px rgba(0,0,0,0.3);\'>🚀 敬请期待 惊喜不断</span></div></div>',
+            explode: false,
+            height: 0.5,
+            offset: 0,
+          },
+        ],
+        layout: {
+          title: '富文本标签展示',
+          innerRadius: 100,       // 宽环形图
+          outerRadius: 160,
+        },
+        style: {
+          backgroundColor: '#1a202c',
+        },
+        camera: {
+          position: [4, 4, 4],
+          fov: 45,
+          minPolarAngle: 0.28,
+          maxPolarAngle: Math.PI - 0.28,
+          minDistance: 3,
+          maxDistance: 15,
+          enableDamping: true,
+          dampingFactor: 0.1,
+        },
+      })
+
+      // 图表4：动态数据
+      charts.chart4 = init3DPieChart('chart4', {
+        data: [
+          { value: 1.0, color: '#ff6b6b', label: '实时数据A', height: 0.6, offset: 0 },
+          { value: 0.8, color: '#45b7d1', label: '实时数据B', height: 0.5, offset: 0 },
+          { value: 0.6, color: '#ffd700', label: '实时数据C', height: 0.4, offset: 0 },
+        ],
+        layout: {
+          title: '动态数据更新',
+          innerRadius: 0,        // 实心饼图
+          outerRadius: 90,
+        },
+        style: {
+          backgroundColor: '#2d3748',
+        },
+        camera: {
+          position: [3, 2, 6],
+          fov: 45,
+          minPolarAngle: 0.3,
+          maxPolarAngle: Math.PI - 0.3,
+          minDistance: 3,
+          maxDistance: 15,
+          enableDamping: true,
+          dampingFactor: 0.1,
+        },
+      })
+
+      // 添加事件监听
+      Object.keys(charts).forEach(chartId => {
+        const chart = charts[chartId]
+        const container = document.getElementById(chartId)
+
+        container.addEventListener('sliceClick', (event) => {
+          console.log(`${chartId} 扇区点击:`, event.detail)
+        })
+
+        container.addEventListener('chartReady', (event) => {
+          console.log(`${chartId} 图表就绪:`, event.detail)
+          
+          // 将相机控制方法保存到图表对象中
+          if (event.detail && event.detail.cameraControls) {
+            charts[chartId].cameraControls = event.detail.cameraControls;
+            console.log(`${chartId} 相机控制已启用`);
+          }
+        })
+      })
+
+      console.log('所有图表初始化完成！')
+
+    } catch (error) {
+      console.error('图表初始化失败:', error)
+    }
+  }
+
+  // 图表1：更新数据
+  function updateChart1() {
+    if (!charts.chart1) return
+
+    const newData = [
+      { value: Math.random() * 3 + 1, color: '#ff6b6b', label: '🔥 热销产品', height: 0.8, offset: 0 },
+      { value: Math.random() * 2 + 1, color: '#45b7d1', label: '🚀 旗舰产品', height: 0.7, offset: 0 },
+      { value: Math.random() * 1.5 + 0.5, color: '#ffd700', label: '⭐ 明星产品', height: 0.6, offset: 0 },
+      { value: Math.random() * 1 + 0.3, color: '#ff9ff3', label: '💎 精品产品', height: 0.5, offset: 0 },
+    ]
+
+    charts.chart1.setData(newData)
+    updateStatus('chart1', '✅ 数据已更新')
+  }
+
+  // 图表1：切换主题
+  function toggleTheme1() {
+    if (!charts.chart1) return
+
+    const container = document.getElementById('chart1')
+    const isLight = container.style.backgroundColor === 'rgb(255, 255, 255)'
+
+    charts.chart1.setOption({
+      style: {
+        backgroundColor: isLight ? '#1f2937' : '#ffffff',
+      },
+    })
+
+    updateStatus('chart1', isLight ? '✅ 已切换到深色主题' : '✅ 已切换到浅色主题')
+  }
+
+  // 图表2：随机数据
+  function updateChart2() {
+    if (!charts.chart2) return
+
+    const newData = [
+      { value: Math.random() * 4 + 1, color: '#4facfe', label: '📱 移动设备', height: 0.9, offset: 0 },
+      { value: Math.random() * 3 + 1, color: '#43e97b', label: '💻 电脑设备', height: 0.8, offset: 0 },
+      { value: Math.random() * 2 + 0.5, color: '#fa709a', label: '🎮 游戏设备', height: 0.7, offset: 0 },
+      { value: Math.random() * 1.5 + 0.3, color: '#fee140', label: '📺 影音设备', height: 0.6, offset: 0 },
+      { value: Math.random() * 1 + 0.2, color: '#a8edea', label: '🏠 智能家居', height: 0.5, offset: 0 },
+    ]
+
+    charts.chart2.setData(newData)
+    updateStatus('chart2', '✅ 随机数据已生成')
+  }
+
+  // 图表2：动画效果
+  function animateChart2() {
+    if (!charts.chart2) return
+
+    charts.chart2.setOption({
+      interaction: { spinSpeed: 2.0 },
+    })
+
+    setTimeout(() => {
+      charts.chart2.setOption({
+        interaction: { spinSpeed: 0.0 },
+      })
+    }, 3000)
+
+    updateStatus('chart2', '🎭 动画效果已启动')
+  }
+
+  // 图表3：更新标签
+  function updateChart3() {
+    if (!charts.chart3) return
+
+    const labels = [
+      '<div style=\'text-align: center;\'><div style=\'color: #ff6b6b; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 15px #ff6b6b; animation: glow 1.5s ease-in-out infinite alternate; margin-bottom: 12px;\'>🔥 热销版 🔥</div><div style=\'color: #4ecdc4; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'background: linear-gradient(45deg, #4ecdc4, #44a08d); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>✨ 全新升级 ✨</span></div><div style=\'color: #feca57; font-size: 0.8em; font-style: italic;\'><span style=\'border: 1px solid #feca57; padding: 1px 4px; border-radius: 3px; background: rgba(254, 202, 87, 0.1);\'>限时特价 8.8折</span></div></div>',
+      '<div style=\'text-align: center;\'><div style=\'color: #45b7d1; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 12px #45b7d1; margin-bottom: 12px;\'><span style=\'background: linear-gradient(90deg, #45b7d1, #96ceb4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>🚀 旗舰版</span></div><div style=\'color: #96ceb4; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border-left: 3px solid #96ceb4; padding-left: 8px; background: rgba(150, 206, 180, 0.1);\'>💎 钻石品质保证</span></div><div style=\'color: #feca57; font-size: 0.8em;\'><span style=\'background: linear-gradient(45deg, #feca57, #ff9ff3); padding: 2px 6px; border-radius: 4px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);\'>VIP 专属服务</span></div></div>',
+      '<div style=\'text-align: center;\'><div style=\'color: #ffd700; font-size: 1.2em; font-weight: bold; text-shadow: 0 0 10px #ffd700; margin-bottom: 12px;\'><span style=\'background: radial-gradient(circle, #ffd700, #ffed4e); padding: 2px 8px; border-radius: 5px; color: #333;\'>⭐ 至尊版 ⭐</span></div><div style=\'color: #ff9ff3; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border: 2px dashed #ff9ff3; padding: 1px 6px; border-radius: 3px; background: rgba(255, 159, 243, 0.1);\'>🎯 精准定位 智能推荐</span></div><div style=\'color: #54a0ff; font-size: 0.8em; font-style: italic;\'><span style=\'background: linear-gradient(135deg, #54a0ff, #5f27cd); color: white; padding: 1px 5px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);\'>AI 驱动 未来科技</span></div></div>',
+      '<div style=\'text-align: center;\'><div style=\'color: #ff9ff3; font-size: 1.1em; font-weight: bold; text-shadow: 0 0 12px #ff9ff3; margin-bottom: 12px;\'><span style=\'background: linear-gradient(45deg, #ff9ff3, #f368e0); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>🎭 艺术版</span></div><div style=\'color: #54a0ff; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border-left: 3px solid #54a0ff; border-radius: 15px; padding: 2px 8px; background: linear-gradient(135deg, rgba(84, 160, 255, 0.2), rgba(95, 39, 205, 0.2));\'>🎨 创意无限 艺术无界</span></div><div style=\'color: #ff6b6b; font-size: 0.8em; font-style: italic;\'><span style=\'background: radial-gradient(circle, #ff6b6b, #ee5a24); color: white; padding: 1px 6px; border-radius: 4px; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);\'>🔥 限时抢购 库存紧张</span></div></div>',
+      '<div style=\'text-align: center;\'><div style=\'color: #00d2d3; font-size: 1.1em; font-weight: bold; text-shadow: 0 0 10px #00d2d3; margin-bottom: 12px;\'><span style=\'background: linear-gradient(90deg, #00d2d3, #54a0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\'>🌟 探索版</span></div><div style=\'color: #5f27cd; font-size: 0.9em; margin: 2px 0; margin-bottom: 22px;\'><span style=\'border-left: 4px solid #5f27cd; padding-left: 10px; background: linear-gradient(135deg, rgba(95, 39, 205, 0.1), rgba(84, 160, 255, 0.1));\'>🔮 神秘功能 即将揭晓</span></div><div style=\'color: #ff9ff3; font-size: 0.8em;\'><span style=\'background: linear-gradient(135deg, #ff9ff3, #f368e0); color: white; padding: 2px 8px; border-radius: 6px; box-shadow: 0 3px 10px rgba(255, 159, 243, 0.4); text-shadow: 1px 1px 2px rgba(0,0,0,0.3);\'>🚀 敬请期待 惊喜不断</span></div></div>',
+    ]
+
+    const newData = charts.chart3.options.data.map((item, index) => ({
+      ...item,
+      label: labels[index],
+    }))
+
+    charts.chart3.setData(newData)
+    updateStatus('chart3', '✅ 标签样式已更新')
+  }
+
+  // 图表3：特效开关
+  function toggleEffects3() {
+    if (!charts.chart3) return
+
+    const container = document.getElementById('chart3')
+    const hasEffects = container.style.filter !== 'none'
+
+    if (hasEffects) {
+      container.style.filter = 'none'
+      updateStatus('chart3', '✅ 特效已关闭')
+    } else {
+      container.style.filter = 'drop-shadow(0 0 20px rgba(255, 107, 107, 0.5))'
+      updateStatus('chart3', '✨ 特效已开启')
+    }
+  }
+
+  // 开始自动更新
+  function startAutoUpdate() {
+    if (autoUpdateInterval) return
+
+    autoUpdateInterval = setInterval(() => {
+      if (!charts.chart4) return
+
+      const newData = [
+        { value: Math.random() * 2 + 0.5, color: '#ff6b6b', label: '实时数据A', height: 0.6, offset: 0 },
+        { value: Math.random() * 1.5 + 0.3, color: '#45b7d1', label: '实时数据B', height: 0.5, offset: 0 },
+        { value: Math.random() * 1 + 0.2, color: '#ffd700', label: '实时数据C', height: 0.4, offset: 0 },
+      ]
+
+      charts.chart4.setData(newData)
+    }, 2000)
+
+    updateStatus('chart4', '🔄 自动更新已启动')
+  }
+
+  // 停止自动更新
+  function stopAutoUpdate() {
+    if (autoUpdateInterval) {
+      clearInterval(autoUpdateInterval)
+      autoUpdateInterval = null
+      updateStatus('chart4', '⏹️ 自动更新已停止')
+    }
+  }
+
+  // 更新状态
+  function updateStatus(chartId, message) {
+    const statusBar = document.querySelector(`#${chartId}`).closest('.chart-card').querySelector('.status-text')
+    statusBar.textContent = `状态：${message}`
+  }
+
+  // 调整 innerRadius 的函数
+  function adjustInnerRadius(chartId, newInnerRadius) {
+    if (!charts[chartId]) {
+      console.error(`图表 ${chartId} 未初始化`);
+      return;
+    }
+    
+    try {
+      // 使用 setOption 更新配置
+      charts[chartId].setOption({
+        layout: {
+          innerRadius: newInnerRadius
+        }
+      });
+      
+      console.log(`${chartId} 内径已更新为: ${newInnerRadius}`);
+      
+      // 更新状态
+      updateStatus(chartId, `✅ 内径已调整为 ${newInnerRadius}`);
+      
+    } catch (error) {
+      console.error(`更新 ${chartId} 内径失败:`, error);
+      updateStatus(chartId, `❌ 内径调整失败: ${error.message}`);
+    }
+  }
+
+  // 重置相机到初始位置
+  function resetCamera(chartId) {
+    if (!charts[chartId]) {
+      console.error(`图表 ${chartId} 未初始化`);
+      return;
+    }
+    
+    try {
+      if (charts[chartId].cameraControls) {
+        charts[chartId].cameraControls.resetCamera();
+        updateStatus(chartId, '✅ 相机已重置到初始位置');
+      } else {
+        updateStatus(chartId, '❌ 该图表不支持相机控制');
+      }
+    } catch (error) {
+      console.error(`重置相机失败:`, error);
+      updateStatus(chartId, `❌ 相机重置失败: ${error.message}`);
+    }
+  }
+
+  // 切换自动旋转
+  function toggleAutoRotate(chartId) {
+    if (!charts[chartId]) {
+      console.error(`图表 ${chartId} 未初始化`);
+      return;
+    }
+    
+    try {
+      if (charts[chartId].cameraControls) {
+        const currentState = charts[chartId].cameraControls.getCameraState();
+        const newAutoRotate = !currentState.autoRotate;
+        
+        charts[chartId].cameraControls.setAutoRotate(newAutoRotate, 1.0);
+        
+        updateStatus(chartId, newAutoRotate ? '✅ 自动旋转已开启' : '⏹️ 自动旋转已停止');
+      } else {
+        updateStatus(chartId, '❌ 该图表不支持相机控制');
+      }
+    } catch (error) {
+      console.error(`切换自动旋转失败:`, error);
+      updateStatus(chartId, `❌ 切换自动旋转失败: ${error.message}`);
+    }
+  }
+
+  // 页面卸载时清理
+  window.addEventListener('beforeunload', function() {
+    if (autoUpdateInterval) {
+      clearInterval(autoUpdateInterval)
+    }
+  })
+</script>
+</body>
+</html>

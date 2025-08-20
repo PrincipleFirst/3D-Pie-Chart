@@ -159,6 +159,30 @@ export const defaultConfig = {
     environmentFile: 'dikhololo_night_1k.hdr',
   },
 
+  // 摄像机配置（可通过 options 覆盖）
+  camera: {
+    position: [2, 1.5, 5],
+    target: [0, 0, 0],
+    up: [0, 1, 0],
+    fov: 50,
+    near: 0.1,
+    far: 1000,
+    // 交互限制（OrbitControls）
+    minPolarAngle: 0.2,    // 约 11.5°
+    maxPolarAngle: Math.PI - 0.2,
+    minDistance: 2,
+    maxDistance: 20,
+    enableDamping: true,
+    dampingFactor: 0.08
+  },
+
+  // 画布尺寸配置（容器内相对尺寸）
+  dimensions: {
+    width: '100%',
+    height: '100%',
+    pixelRatio: undefined // 默认使用浏览器 devicePixelRatio
+  },
+
   // 特效配置
   effects: {
     showBloom: false,
