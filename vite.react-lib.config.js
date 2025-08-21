@@ -1,9 +1,32 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+import { copyFileSync, mkdirSync } from 'fs'
 
 // 专门用于构建 React 3D Pie Chart 库的配置
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'copy-showcase',
+      closeBundle() {
+        // 复制 showcase.html 到输出目录
+        try {
+          const sourceFile = resolve(__dirname, 'public/showcase.html')
+          const targetFile = resolve(__dirname, 'dist-react-lib/showcase.html')
+          
+          // 确保目标目录存在
+          mkdirSync(resolve(__dirname, 'dist-react-lib'), { recursive: true })
+          
+          // 复制文件
+          copyFileSync(sourceFile, targetFile)
+          console.log('✅ showcase.html copied to dist-react-lib/')
+        } catch (error) {
+          console.error('❌ Failed to copy showcase.html:', error)
+        }
+      }
+    }
+  ],
   
   build: {
     lib: {

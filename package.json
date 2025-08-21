@@ -6,7 +6,6 @@
     "dev": "vite",
     "build": "vite build",
     "build:prod": "node build-prod.js",
-    "build:lib": "vite build --config vite.lib.config.js",
     "build:react-lib": "vite build --config vite.react-lib.config.js",
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"

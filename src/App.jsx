@@ -9,7 +9,6 @@ import useInputControls, { pieDataFromControls } from './useInputControls'
 import CSS2DRendererProvider from './CSS2DRenderer'
 import { getConfig, isProduction } from './config'
 import { isFeatureEnabled } from './env'
-import './richtext-animations.css'
 
 function App() {
   const orbitControlsRef = React.useRef()
