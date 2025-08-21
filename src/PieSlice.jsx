@@ -96,7 +96,6 @@ const PieSlice = ({
     zOffset = Math.sin(theta) * explosionMagnitude
   }
 
-  const innerRadius = arcGenerator.innerRadius()(arc)
   const outerRadius = arcGenerator.outerRadius()(arc)
 
 
@@ -114,8 +113,8 @@ const PieSlice = ({
     extrudeSettings,
   ])
 
-  // ECharts 风格 labelLineStyle 支持 - 使用 useMemo 缓存计算结果
-  const labelLineData = useMemo(() => {
+  // 合并 labelLine 数据和样式计算 - 使用 useMemo 缓存
+  const { labelLineData, lineStyle } = useMemo(() => {
     const labelLineStyle = datum.labelLineStyle || {}
     const SCALE = 0.01
     const r = outerRadius * SCALE
@@ -170,20 +169,19 @@ const PieSlice = ({
     // 标签位置将根据摄像机动态调整，这里先设置一个初始位置
     const labelPos = [endX, 0, mid[2]]
     
-    return { start, mid, end, finalIsLeft, labelPos, labelOffset }
-  }, [datum.labelLineStyle, outerRadius, theta])
-  
-  // 解构计算结果
-  const { start, mid, end, finalIsLeft, labelPos, labelOffset } = labelLineData
-
-  // labelLine 样式 - 使用 useMemo 缓存
-  const lineStyle = useMemo(() => {
-    const labelLineStyle = datum.labelLineStyle || {}
-    return {
+    const labelLineData = { start, mid, end, finalIsLeft, labelPos, labelOffset }
+    
+    // labelLine 样式
+    const lineStyle = {
       color: labelLineStyle.color || datum.labelLineColor || color,
       width: labelLineStyle.width || datum.labelLineWidth || 2
     }
-  }, [datum.labelLineStyle, datum.labelLineColor, datum.labelLineWidth, color])
+    
+    return { labelLineData, lineStyle }
+  }, [datum.labelLineStyle, datum.labelLineColor, datum.labelLineWidth, outerRadius, theta, color])
+  
+  // 解构计算结果
+  const { start, mid, end, finalIsLeft, labelOffset } = labelLineData
 
   // 标签样式配置 - 使用 useMemo 缓存
   const labelStyle = useMemo(() => {

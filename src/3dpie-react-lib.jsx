@@ -33,10 +33,10 @@ window.init3DPieChart = function(container, options = {}) {
         detail: { index, item, instanceId }
       }))
     },
-    onChartReady: (config) => {
-      // 触发图表就绪事件
+    onChartReady: (readyPayload) => {
+      // 触发图表就绪事件（将 cameraControls 等信息直接扁平到 detail 上）
       containerElement.dispatchEvent(new CustomEvent('chartReady', {
-        detail: { config, instanceId }
+        detail: { ...readyPayload, instanceId }
       }))
     }
   })
@@ -63,9 +63,9 @@ window.init3DPieChart = function(container, options = {}) {
             detail: { index, item, instanceId: this.id }
           }))
         },
-        onChartReady: (config) => {
+        onChartReady: (readyPayload) => {
           this.container.dispatchEvent(new CustomEvent('chartReady', {
-            detail: { config, instanceId: this.id }
+            detail: { ...readyPayload, instanceId: this.id }
           }))
         }
       }))
