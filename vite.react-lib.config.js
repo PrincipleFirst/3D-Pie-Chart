@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import { copyFileSync, mkdirSync } from 'fs'
 
-// 专门用于构建 React 3D Pie Chart 库的配置
+// 专门用于构建 3D Pie Chart React 库的配置
 export default defineConfig({
   plugins: [
     react(),
@@ -13,14 +13,14 @@ export default defineConfig({
         // 复制 showcase.html 到输出目录
         try {
           const sourceFile = resolve(__dirname, 'public/showcase.html')
-          const targetFile = resolve(__dirname, 'dist-react-lib/showcase.html')
+          const targetFile = resolve(__dirname, 'dist-3d-pie-chart/showcase.html')
           
           // 确保目标目录存在
-          mkdirSync(resolve(__dirname, 'dist-react-lib'), { recursive: true })
+          mkdirSync(resolve(__dirname, 'dist-3d-pie-chart'), { recursive: true })
           
           // 复制文件
           copyFileSync(sourceFile, targetFile)
-          console.log('✅ showcase.html copied to dist-react-lib/')
+          console.log('✅ showcase.html copied to dist-3d-pie-chart/')
         } catch (error) {
           console.error('❌ Failed to copy showcase.html:', error)
         }
@@ -30,9 +30,9 @@ export default defineConfig({
   
   build: {
     lib: {
-      entry: 'src/3dpie-react-lib.jsx',
+      entry: 'lib/src/index.jsx',
       name: 'ThreeDPieChartReact',
-      fileName: '3dpie-react',
+      fileName: '3d-pie-chart-react',
       formats: ['es', 'umd']
     },
 
@@ -44,7 +44,7 @@ export default defineConfig({
         // 固定 CSS 资产文件名，确保稳定路径
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return '3dpie-react.css'
+            return '3d-pie-chart.css'
           }
           return assetInfo.name || '[name][extname]'
         }
@@ -61,7 +61,7 @@ export default defineConfig({
     },
 
     // 输出目录
-    outDir: 'dist-react-lib',
+    outDir: 'dist-3d-pie-chart',
 
     // 清空输出目录
     emptyOutDir: true,

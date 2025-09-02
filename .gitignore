@@ -1,7 +1,6 @@
 node_modules
 .DS_Store
 dist
-dist-ssr
 *.local
 .idea
-/dist-react-lib/
+dist-3d-pie-chart

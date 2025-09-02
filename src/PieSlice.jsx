@@ -353,7 +353,6 @@ const PieSlice = ({
         labelStyle={labelStyle}
         className={datum.labelClassName || ''}
         style={datum.labelContainerStyle || {}}
-        // 不再需要 labelOffset，因为位置已经计算好了
       />
       
       {/* labelLine 折线 - 使用动态计算的位置 */}
