@@ -196,14 +196,11 @@ const PieSlice = ({
 
   // label 多行内容 - 使用 useMemo 缓存
   const labelLines = useMemo(() => {
-    console.log('PieSlice labelLines build:', { label, datum })
     // 如果 label 是 HTML 字符串，直接返回包含它的数组
     if (label && typeof label === 'string') {
-      console.log('Label found:', label)
       return [label]
     }
     // 如果没有 label，返回空数组
-    console.log('No label found, returning empty array')
     return []
   }, [label, datum])
 

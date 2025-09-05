@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react'
-import { useThree } from '@react-three/fiber'
+import { useThree, useFrame } from '@react-three/fiber'
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import * as THREE from 'three'
 
@@ -16,15 +16,8 @@ const CSS2DLabels = ({
   const ref = useRef()
   const { scene } = useThree()
   
-  // 添加详细的调试信息
-  console.log('CSS2DLabels render:', { 
-    labelLines, 
-    position, 
-    isLeft, 
-    labelStyle,
-    sceneUserData: scene.userData,
-    hasLabelRenderer: !!scene.userData.labelRenderer
-  })
+  // 仅在开发需要时打开渲染期日志（避免每帧刷屏）
+  // console.log('CSS2DLabels render:', { labelLines, position, isLeft })
   
   // 校验标记（避免在 Hooks 之前 return）
   const hasValidLabelLines = Array.isArray(labelLines) && labelLines.length > 0
@@ -35,16 +28,13 @@ const CSS2DLabels = ({
     if (!hasValidLabelLines) return ''
     let content = ''
     
-    console.log('Building HTML content from labelLines:', labelLines)
-    
+
     labelLines.forEach((line, idx) => {
       // 如果 line 是 HTML 字符串，直接使用
       if (typeof line === 'string' && line.includes('<')) {
-        console.log('Using HTML line:', line)
         content += line
       } else {
         // 否则生成普通的 span 标签
-        console.log('Using text line:', line)
         const inlineStyle = labelStyle.style ? ` style="${labelStyle.style}"` : ''
         content += `<div class="label-line">
           <span class="label-text"${inlineStyle}>${line}</span>
@@ -52,7 +42,6 @@ const CSS2DLabels = ({
       }
     })
     
-    console.log('Final HTML content:', content)
     return content
   }, [hasValidLabelLines, labelLines, labelStyle.style])
   
@@ -94,19 +83,13 @@ const CSS2DLabels = ({
   // 创建CSS2D元素
   useEffect(() => {
     if (!hasValidLabelLines) return
-    console.log('CSS2DLabels useEffect triggered:', {
-      ref: !!ref.current,
-      sceneUserData: scene.userData,
-      labelRenderer: scene.userData.labelRenderer
-    })
+    // console.log('CSS2DLabels useEffect triggered')
     
     if (!ref.current) {
-      console.warn('CSS2DLabels: ref.current is null')
       return
     }
     
     if (!scene.userData.labelRenderer) {
-      console.warn('CSS2DLabels: scene.userData.labelRenderer is not available')
       return
     }
     
@@ -120,7 +103,7 @@ const CSS2DLabels = ({
       // 设置z-index确保标签在最上层
       labelDiv.style.zIndex = '1000'
       
-      console.log('Created label div:', labelDiv)
+      // console.log('Created label div:', labelDiv)
       
       // 创建CSS2DObject
       const labelObject = new CSS2DObject(labelDiv)
@@ -133,18 +116,46 @@ const CSS2DLabels = ({
       ref.current.add(labelObject)
       ref.current.labelObject = labelObject
       
-      console.log('Successfully added label to scene:', labelObject)
+      // console.log('Successfully added label to scene:', labelObject)
       
       return () => {
         if (labelObject && ref.current) {
           ref.current.remove(labelObject)
-          console.log('Removed label from scene')
+          // console.log('Removed label from scene')
         }
       }
     } catch (error) {
       console.error('Error creating CSS2D label:', error)
     }
-  }, [className, hasValidLabelLines, htmlContent, labelStyles, scene.userData, scene.userData.labelRenderer])
+  }, [className, hasValidLabelLines, htmlContent, labelStyles])
+
+  // 使用 useFrame 持续更新 three 对象的位置，避免通过 React 渲染驱动
+  const targetRef = useRef(position && Array.isArray(position) ? new THREE.Vector3(...position) : new THREE.Vector3())
+
+  // 当外部目标位置变更时，仅更新 ref，不触发重渲染
+  useEffect(() => {
+    if (Array.isArray(position) && position.length === 3) {
+      if (!targetRef.current) targetRef.current = new THREE.Vector3()
+      targetRef.current.set(position[0], position[1], position[2])
+    }
+  }, [position])
+
+  // 每帧将当前 group 位置插值到目标位置
+  useFrame((state, delta) => {
+    if (!ref.current || !Array.isArray(position)) return
+    const group = ref.current
+    // 若未创建标签对象也无须更新
+    // 平滑插值，系数可按需调整
+    const lerpAlpha = Math.min(1, delta * 8)
+    group.position.lerp(targetRef.current, lerpAlpha)
+
+    // 可选：位置变更时回调（轻量，避免每帧昂贵计算）
+    if (group.labelObject && onPositionChange) {
+      const worldPosition = new THREE.Vector3()
+      group.labelObject.getWorldPosition(worldPosition)
+      onPositionChange([worldPosition.x, worldPosition.y, worldPosition.z])
+    }
+  })
   
   // 监听位置变化，更新标签位置
   useEffect(() => {
@@ -167,7 +178,7 @@ const CSS2DLabels = ({
   }
 
   return (
-    <group ref={ref} position={position}>
+    <group ref={ref}>
       {/* 空的mesh，用于定位 */}
       <mesh visible={false}>
         <boxGeometry args={[0.001, 0.001, 0.001]} />
@@ -177,4 +188,39 @@ const CSS2DLabels = ({
   )
 }
 
-export default CSS2DLabels
+// 避免无意义重渲染：仅当关键值变更才更新
+const arePropsEqual = (prev, next) => {
+  // labelLines：长度与每项内容（浅比较字符串）
+  const prevLines = Array.isArray(prev.labelLines) ? prev.labelLines : []
+  const nextLines = Array.isArray(next.labelLines) ? next.labelLines : []
+  if (prevLines.length !== nextLines.length) return false
+  for (let i = 0; i < prevLines.length; i++) {
+    if (prevLines[i] !== nextLines[i]) return false
+  }
+
+  // position：数值相同则认为未变（useFrame 内部处理平滑移动）
+  const pPos = Array.isArray(prev.position) ? prev.position : []
+  const nPos = Array.isArray(next.position) ? next.position : []
+  if (pPos.length !== nPos.length) return false
+  for (let i = 0; i < pPos.length; i++) {
+    if (pPos[i] !== nPos[i]) return false
+  }
+
+  // isLeft、className：基本类型比较
+  if (prev.isLeft !== next.isLeft) return false
+  if (prev.className !== next.className) return false
+
+  // labelStyle.style 与 style（对象）：只关心其序列化值（若很大可改为白名单）
+  const prevLabelInline = prev.labelStyle?.style || ''
+  const nextLabelInline = next.labelStyle?.style || ''
+  if (prevLabelInline !== nextLabelInline) return false
+
+  const prevStyleStr = JSON.stringify(prev.style || {})
+  const nextStyleStr = JSON.stringify(next.style || {})
+  if (prevStyleStr !== nextStyleStr) return false
+
+  // onPositionChange：引用变化不应导致渲染（在 useFrame 内调用）
+  return true
+}
+
+export default React.memo(CSS2DLabels, arePropsEqual)

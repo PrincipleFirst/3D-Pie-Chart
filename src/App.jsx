@@ -20,15 +20,6 @@ function App() {
   // 强制使用配置文件中的数据，确保标签显示
   const data = config.data
   
-  // 添加详细的调试信息
-  console.log('App.jsx data:', { 
-    controlValues: controlValues.numSlices, 
-    configData: config.data, 
-    finalData: data,
-    firstItemLabel: data[0]?.label,
-    dataLength: data.length
-  })
-
   // 从配置或控制面板获取参数
   const {
     innerRadius,
