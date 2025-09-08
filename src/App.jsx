@@ -7,20 +7,15 @@ import Pie from './Pie'
 import Turntable from './Turntable'
 import useInputControls, { pieDataFromControls } from './useInputControls'
 import CSS2DRendererProvider from './CSS2DRenderer'
-import { getConfig, isProduction } from './config'
 import { isFeatureEnabled } from './env'
 
 function App() {
   const orbitControlsRef = React.useRef()
   const [controlValues, set] = useInputControls()
-  
-  // 获取配置
-  const config = getConfig()
-  
-  // 强制使用配置文件中的数据，确保标签显示
-  const data = config.data
-  
-  // 从配置或控制面板获取参数
+
+  // 从控制面板获取数据与参数
+  const data = pieDataFromControls(controlValues)
+
   const {
     innerRadius,
     outerRadius,
@@ -43,19 +38,7 @@ function App() {
     titleOffset,
     showValues,
     valuesAsPercent,
-  } = controlValues.numSlices ? controlValues : {
-    ...config.layout,
-    ...config.style,
-    ...config.lighting,
-    ...config.effects,
-    ...config.interaction,
-    title: config.layout.title,
-    titleMaxWidth: config.layout.titleMaxWidth,
-    titleOffset: config.layout.titleOffset,
-    backgroundColor: config.style.backgroundColor,
-    showValues: config.interaction.showValues,
-    valuesAsPercent: config.interaction.valuesAsPercent,
-  }
+  } = controlValues
 
   const addEnvironment = !!environmentFile
 

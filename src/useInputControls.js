@@ -2,7 +2,7 @@ import { extent, max, maxIndex, min } from 'd3-array'
 import { button, buttonGroup, folder, useControls, LevaInputs } from 'leva'
 import React from 'react'
 import { palette } from './theme'
-import { isProduction } from './config'
+import { defaultConfig } from './config'
 import { isFeatureEnabled } from './env'
 
 // lazy global state to track whether we did the first initialization of controls
@@ -446,10 +446,18 @@ const useInputControls = () => {
       details: folder(
         {
           [`label${i}`]: {
-            value: '',
+            value:
+              Array.isArray(defaultConfig?.data) && defaultConfig.data[i]?.label
+                ? defaultConfig.data[i].label
+                : '',
             label: 'label',
             type: LevaInputs.STRING,
-            ...urlSync(`l${i}`, ''),
+            ...urlSync(
+              `l${i}`,
+              Array.isArray(defaultConfig?.data) && defaultConfig.data[i]?.label
+                ? defaultConfig.data[i].label
+                : ''
+            ),
           },
           [`color${i}`]: {
             value: palette[i % palette.length],
